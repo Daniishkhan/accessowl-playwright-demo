@@ -98,6 +98,18 @@ npm run appsmith:broken-selector-demo
 
 The write commands support dry-run mode. They create evidence without changing the local Appsmith instance.
 
+What these commands prove:
+
+| Command | What it does | What to inspect |
+| --- | --- | --- |
+| `appsmith:start` | Starts the local Appsmith container, waits for readiness, creates or logs in as the local admin, and saves Playwright auth state. | `playwright/.auth/appsmith-admin.json` and the latest `evidence/runs/*/` folder |
+| `appsmith:auth-check` | Opens Appsmith with saved browser state and confirms the session lands on `/applications`. | Screenshot, trace, and `auth-check.json` |
+| `appsmith:sync-users` | Reads the visible access surface and normalizes users into JSON. A fresh Appsmith instance can return `0 user(s)`, which is expected before invites or workspace users exist. | `sync-users.json` and the audit event |
+| `appsmith:invite -- --dry-run` | Walks the provisioning path without committing the invite. | Dry-run input, log, screenshot, and audit event |
+| `appsmith:deprovision -- --confirm --dry-run` | Exercises the destructive-command guard and dry-run path. | Confirmation handling and audit event |
+| `appsmith:api-replay-sync` | Observes same-origin Appsmith network traffic after browser auth and records candidate API calls for possible owned-instance replay. | Redacted request summaries |
+| `appsmith:broken-selector-demo` | Breaks a deterministic locator, validates a constrained replacement action plan, and recovers without allowing arbitrary model behavior. | `selector-repair-plan.json`, screenshot, and logs |
+
 ## Scenario Commands
 
 These scripts are intentionally small. They expose the browser automation work directly instead of hiding every step behind the CLI.
