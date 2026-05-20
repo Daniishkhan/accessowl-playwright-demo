@@ -1,46 +1,48 @@
-# Appsmith Access Agent - One Pager
+# One Pager
 
-## Project Summary
+## Summary
 
-Appsmith Access Agent is a self-hosted SaaS access automation lab built for an AccessOwl-style interview demo. It uses TypeScript, Playwright, Zod, evidence capture, and constrained LLM fallback to automate access-management flows against an Appsmith instance that you own.
+**Appsmith Access Agent** is a runnable Playwright automation lab for no-SCIM SaaS access workflows. It uses a self-hosted Appsmith instance as the safe target and demonstrates service-account browser automation, auth-state reuse, evidence capture, network observation, dry-run/confirmation guards, and constrained OpenAI selector repair.
 
-The point is not to make a flashy browser bot. The point is to show production judgment around agentic SaaS integrations: deterministic automation first, clear safety boundaries, observable runs, and AI only where it meaningfully reduces maintenance risk.
+The goal is to show the engineering posture behind an AccessOwl-style agentic integration: deterministic automation first, observable runs, safe write boundaries, and AI used only as a bounded fallback.
 
-## AccessOwl Fit
+## Why Appsmith
 
-AccessOwl automates SaaS access where SCIM/SAML/API support is missing, expensive, or incomplete. This project mirrors the same technical shape:
+Appsmith gives the demo a real SPA with login, workspaces, applications, modals, dynamic loading, API calls, and admin-like surfaces. Because it runs locally, the project can inspect browser traffic, create practice apps, break selectors, and replay same-origin requests without scraping a third-party SaaS account.
 
-- **Structure Sync:** discover available roles, groups, and visible permission surfaces.
-- **User Sync:** extract users, status, roles, and groups into normalized JSON.
-- **Provisioning:** invite or add a test user with a selected role when available.
-- **Deprovisioning:** deactivate or remove a test user behind explicit confirmation.
-- **Access Review Evidence:** produce screenshots, traces, before/after state, redacted logs, and audit JSON.
+## AccessOwl Relevance
 
-## Demo Thesis
+AccessOwl publicly frames provisioning around apps where SCIM/SAML or complete APIs are missing or expensive, using integration accounts, RPA, and private APIs. This project mirrors that technical shape:
 
-> I built a controlled AccessOwl-style integration lab: deterministic Playwright automation over a self-hosted SaaS admin UI, with user/permission sync, provisioning evidence, authenticated API observation where appropriate, and a constrained LLM fallback for selector repair.
+- **Login state:** Playwright authenticates as a service/integration account and saves `storageState`.
+- **Sync shape:** visible users/apps/access can be normalized into JSON.
+- **Provisioning shape:** invite/deprovision commands expose dry-run and confirmation semantics.
+- **Evidence shape:** screenshots, traces, redacted logs, and audit JSON are first-class outputs.
+- **Recovery shape:** OpenAI proposes strict JSON actions only after deterministic selector failure.
 
-## MVP Demo Flow
+## What To Demo
 
-1. Start Appsmith locally with Docker Compose.
-2. Log in with a dedicated service account and persist Playwright `storageState`.
-3. Sync visible users and permission metadata from the Admin UI.
-4. Run invite/deprovision in dry-run mode.
-5. Run a confirmed action on a fake user.
-6. Open the evidence bundle and Playwright trace.
-7. Run the broken-selector demo.
-8. Show deterministic failure, JSON-only LLM plan validation, and safe recovery.
+```bash
+npm run appsmith:setup-check
+npm run appsmith:login
+npm run appsmith:auth-check
+PRACTICE_HEADLESS=true npm run practice:03
+PRACTICE_HEADLESS=true npm run practice:06
+npm run appsmith:broken-selector-demo
+```
 
-## What Makes It Credible
+This shows the local target is alive, auth state works, a practice app can be opened, network calls can be observed safely, and selector repair is schema-validated before execution.
 
-- Owned self-hosted target, not third-party scraping.
-- Role and label locators before CSS or coordinates.
-- Auth state and evidence excluded from Git.
-- Redaction for secrets and non-demo identities.
-- Human confirmation for destructive actions.
-- LLM output treated as untrusted data and validated with Zod.
-- Prompt-injection page content handled as hostile input.
+## Engineering Judgment On Display
+
+- Role/text/test-id locators before brittle CSS.
+- Auth state stored locally and ignored by Git.
+- No real third-party target.
+- Write flows have `--dry-run` and destructive actions require `--confirm`.
+- OpenAI output is untrusted until it passes Zod and safety validation.
+- Prompt-injection-like page text is treated as hostile content.
+- Evidence folders make failures inspectable through screenshots and Playwright traces.
 
 ## Final Pitch
 
-Built a TypeScript/Playwright access automation agent against a self-hosted Appsmith instance, including service-account login, storage-state reuse, browser-driven user and permission sync, provisioning/deprovisioning workflows, Playwright trace evidence, authenticated API observation on an owned target, and Zod-validated LLM fallback for broken selectors.
+I built a TypeScript/Playwright access automation lab against a self-hosted SaaS target. It demonstrates the core mechanics behind agentic SaaS integrations: service-account login, browser-driven sync, guarded write workflows, audit-grade evidence, authenticated API observation on an owned target, and bounded OpenAI selector repair.

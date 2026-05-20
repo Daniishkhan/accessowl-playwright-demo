@@ -1,57 +1,62 @@
-# Implementation Plan
+# Status And Roadmap
 
-## M0 - Docs and Scaffold
+This file summarizes what exists today and what would come next, so a reviewer can quickly separate implemented behavior from future hardening.
 
-- Split the original one-pager and technical draft into README plus focused docs.
-- Add npm workspace files, TypeScript config, Vitest config, and Playwright config.
-- Add Appsmith Docker Compose setup on ports `8080` and `8443`.
+## Implemented
 
-Acceptance:
+- Local Appsmith Docker Compose target.
+- npm TypeScript workspace.
+- CLI for setup, signup, login, auth check, sync, invite, deprovision, API observation, and broken-selector demo.
+- Zod schemas for config, normalized users, audit events, evidence bundles, and action plans.
+- Evidence writer with run IDs, JSON artifacts, logs, screenshots, and trace paths.
+- Secret and email redaction.
+- Confirmation guard for destructive actions.
+- OpenAI structured-output selector repair with Zod validation.
+- Playwright fixture tests for user extraction and selector recovery.
+- Solved Playwright practice scripts for auth, empty/populated app states, app creation, locator resilience, traces, network observation, and selector repair.
 
-- `npm install` succeeds.
-- `npm run typecheck` succeeds.
-- Docs explain the AccessOwl relevance in one screen.
+## Verification
 
-## M1 - Core Primitives
+```bash
+npm run typecheck
+npm test
+npm run test:fixtures
+```
 
-- Add Zod schemas for config, normalized users, audit events, evidence, and action plans.
-- Add redaction helpers.
-- Add evidence writer with standard run directories.
-- Add browser session factory and storage-state helpers.
+Live local smoke path:
 
-Acceptance:
+```bash
+npm run appsmith:setup-check
+npm run appsmith:login
+npm run appsmith:auth-check
+PRACTICE_HEADLESS=true npm run practice:03
+PRACTICE_HEADLESS=true npm run practice:06
+npm run appsmith:broken-selector-demo
+```
 
-- Unit tests cover schema validation, redaction, evidence directory creation, and confirmation gates.
+## Known Limitations
 
-## M2 - Appsmith Workflows
+- Appsmith CE may not expose all role/group/admin surfaces available in paid editions.
+- Provision/deprovision commands are scaffolded conservatively and should be adapted to the exact Appsmith edition and SMTP setup.
+- The project does not include a dashboard, database-backed run history, or remote artifact storage.
+- The sandbox runner is intentionally not included yet.
+- API replay is limited to owned-instance observation and should not be generalized to third-party private APIs.
 
-- Implement setup check, login, sync users, invite, deprovision, API observation, and broken-selector demo.
-- Add first-admin signup and auth-check helpers for repeatable local practice.
-- Add CLI commands and root npm scripts.
-- Keep write actions dry-run capable.
+## Next Iteration
 
-Acceptance:
+- Add a small local dashboard for evidence review.
+- Add a durable run store with SQLite or Postgres.
+- Add a Mailpit/MailHog setup for invite-email flows.
+- Add sandbox execution for browser workers.
+- Add a second self-hosted SaaS target to prove the integration abstraction.
+- Add CI that runs unit tests, fixture tests, and lint/typecheck.
 
-- Commands are present and fail with clear messages when Appsmith is not configured.
-- Dry-run write workflows produce evidence without changing the target.
+## Production Hardening Checklist
 
-## M3 - Fixture Tests
-
-- Add a mock Appsmith-like page for Playwright tests.
-- Validate user extraction from fixture HTML.
-- Validate broken-selector fallback with a fixture action plan.
-- Validate prompt-injection text does not change the goal.
-
-Acceptance:
-
-- `npm test` passes.
-- `npm run test:fixtures` passes when Playwright Chromium is available.
-
-## M4 - Real Target Smoke
-
-- Gate real Appsmith checks behind `APPSMITH_E2E=1`.
-- Run setup check, login, sync, and dry-run write flows against `http://localhost:8080`.
-
-Acceptance:
-
-- Real target smoke does not run accidentally in CI or local unit tests.
+- Use per-run isolated browser contexts.
+- Rotate service-account credentials.
+- Encrypt auth state at rest.
+- Store evidence in an access-controlled artifact bucket.
+- Add approval queues for destructive workflows.
+- Add explicit rate limits and retry policies.
+- Add structured OpenTelemetry spans for every automation step.
