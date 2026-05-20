@@ -17,6 +17,9 @@ import { appsmithLikeFixtureHtml, runBrokenSelectorRecoveryOnPage } from "./brok
 import { extractUsersFromPage } from "./extract-users.js";
 import { requireAppsmithCredentials } from "./config.js";
 
+const APPSMITH_READY_TIMEOUT_MS = 120_000;
+const APPSMITH_READY_POLL_MS = 2_000;
+
 export async function setupCheck(config: AppsmithConfig): Promise<{ ok: boolean; status?: number; url: string }> {
   const writer = await EvidenceWriter.create({
     evidenceDir: config.evidenceDir,
@@ -25,7 +28,7 @@ export async function setupCheck(config: AppsmithConfig): Promise<{ ok: boolean;
   });
 
   try {
-    const response = await fetch(config.baseUrl, { method: "GET" });
+    const response = await waitForAppsmithHttp(config.baseUrl);
     const result = { ok: response.status < 500, status: response.status, url: config.baseUrl };
     await writer.writeJson("setup-check.json", result);
     await writer.writeAuditEvent(
@@ -63,7 +66,8 @@ export async function login(config: AppsmithConfig): Promise<{ storageStatePath:
   });
 
   try {
-    await session.page.goto(joinUrl(config.baseUrl, "/user/login"), { waitUntil: "domcontentloaded" });
+    await waitForAppsmithHttp(config.baseUrl);
+    await gotoAppsmithPath(session.page, config.baseUrl, "/user/login");
     await session.page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
     await waitForLoginPageOrKnownState(session.page);
     await session.page.screenshot({ path: writer.screenshotPath("01-login-page") });
@@ -134,7 +138,8 @@ export async function signupAdmin(config: AppsmithConfig): Promise<{ storageStat
   const session = await createBrowserSession({ headless: config.headless });
 
   try {
-    await session.page.goto(joinUrl(config.baseUrl, "/user/signup"), { waitUntil: "domcontentloaded" });
+    await waitForAppsmithHttp(config.baseUrl);
+    await gotoAppsmithPath(session.page, config.baseUrl, "/user/signup");
     await session.page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
     await waitForSignupPageOrKnownState(session.page);
     await session.page.screenshot({ path: writer.screenshotPath("01-signup-page") });
@@ -184,7 +189,8 @@ export async function authCheck(config: AppsmithConfig): Promise<{ ok: boolean; 
   const session = await createBrowserSession({ headless: config.headless, storageStatePath: config.storageStatePath });
 
   try {
-    await session.page.goto(joinUrl(config.baseUrl, "/applications"), { waitUntil: "domcontentloaded" });
+    await waitForAppsmithHttp(config.baseUrl);
+    await gotoAppsmithPath(session.page, config.baseUrl, "/applications");
     await session.page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
     await session.page.screenshot({ path: writer.screenshotPath("auth-check") });
     await assertAuthenticated(session.page);
@@ -477,55 +483,60 @@ async function completeFirstAdminSignup(page: Page, config: AppsmithConfig): Pro
 }
 
 async function waitForLoginPageOrKnownState(page: Page): Promise<void> {
-  await page
-    .waitForFunction(
-      () => {
-        const bodyText = document.body?.innerText ?? "";
-        const pathname = window.location.pathname;
-        const hasLoginInput = Boolean(document.querySelector("input[type='email'], input[type='password']"));
-
-        return (
-          hasLoginInput ||
-          pathname === "/applications" ||
-          pathname.startsWith("/app/") ||
-          pathname.startsWith("/settings/") ||
-          pathname.startsWith("/setup/") ||
-          /sign in to your account|create your account|almost there/i.test(bodyText)
-        );
-      },
-      undefined,
-      { timeout: 10_000 }
-    )
-    .catch(() => undefined);
+  await waitForPageCondition(page, isLoginPageKnownState);
 }
 
 async function waitForSignupPageOrKnownState(page: Page): Promise<void> {
-  await page
-    .waitForFunction(
-      () => {
-        const bodyText = document.body?.innerText ?? "";
-        const pathname = window.location.pathname;
-        const hasSignupInput = Boolean(
-          document.querySelector(
-            "input[type='email'], input[type='password'], input[placeholder*='John'], input[placeholder*='reach' i]"
-          )
-        );
+  await waitForPageCondition(page, isSignupPageKnownState);
+}
 
-        return (
-          hasSignupInput ||
-          pathname === "/applications" ||
-          pathname.startsWith("/app/") ||
-          pathname.startsWith("/settings/") ||
-          /already\s+(an?\s+)?account\s+registered|please\s+sign\s+in\s+instead|create your account|almost there/i.test(
-            bodyText
-          ) ||
-          window.location.search.includes("error=")
-        );
-      },
-      undefined,
-      { timeout: 10_000 }
+async function waitForPageCondition(page: Page, condition: () => boolean): Promise<void> {
+  const deadline = Date.now() + APPSMITH_READY_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    const ready = await page.evaluate(condition).catch(() => false);
+    if (ready) return;
+
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 15_000 }).catch(() => undefined);
+    await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
+    await sleep(APPSMITH_READY_POLL_MS);
+  }
+}
+
+function isLoginPageKnownState(): boolean {
+  const bodyText = document.body?.innerText ?? "";
+  const pathname = window.location.pathname;
+  const hasLoginInput = Boolean(document.querySelector("input[type='email'], input[type='password']"));
+
+  return (
+    hasLoginInput ||
+    pathname === "/applications" ||
+    pathname.startsWith("/app/") ||
+    pathname.startsWith("/settings/") ||
+    pathname.startsWith("/setup/") ||
+    /sign in to your account|create your account|almost there/i.test(bodyText)
+  );
+}
+
+function isSignupPageKnownState(): boolean {
+  const bodyText = document.body?.innerText ?? "";
+  const pathname = window.location.pathname;
+  const hasSignupInput = Boolean(
+    document.querySelector(
+      "input[type='email'], input[type='password'], input[placeholder*='John'], input[placeholder*='reach' i]"
     )
-    .catch(() => undefined);
+  );
+
+  return (
+    hasSignupInput ||
+    pathname === "/applications" ||
+    pathname.startsWith("/app/") ||
+    pathname.startsWith("/settings/") ||
+    /already\s+(an?\s+)?account\s+registered|please\s+sign\s+in\s+instead|create your account|almost there/i.test(
+      bodyText
+    ) ||
+    window.location.search.includes("error=")
+  );
 }
 
 async function assertSignupFormAvailable(page: Page): Promise<void> {
@@ -698,4 +709,51 @@ function makeSuccessEvent(
 
 export async function ensureStorageDir(config: AppsmithConfig): Promise<void> {
   await mkdir(path.dirname(config.storageStatePath), { recursive: true });
+}
+
+async function waitForAppsmithHttp(baseUrl: string, timeoutMs = APPSMITH_READY_TIMEOUT_MS): Promise<Response> {
+  const deadline = Date.now() + timeoutMs;
+  let lastError = "no response yet";
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(baseUrl, {
+        method: "GET",
+        signal: AbortSignal.timeout(5_000)
+      });
+
+      if (response.status < 500) return response;
+      lastError = `HTTP ${response.status}`;
+    } catch (error) {
+      lastError = (error as Error).message;
+    }
+
+    await sleep(APPSMITH_READY_POLL_MS);
+  }
+
+  throw new Error(
+    `Appsmith is not ready at ${baseUrl} after ${Math.round(timeoutMs / 1000)}s. Last error: ${lastError}`
+  );
+}
+
+async function gotoAppsmithPath(page: Page, baseUrl: string, pathname: string): Promise<void> {
+  const url = joinUrl(baseUrl, pathname);
+  const deadline = Date.now() + APPSMITH_READY_TIMEOUT_MS;
+  let lastError = "navigation did not start";
+
+  while (Date.now() < deadline) {
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15_000 });
+      return;
+    } catch (error) {
+      lastError = (error as Error).message;
+      await sleep(APPSMITH_READY_POLL_MS);
+    }
+  }
+
+  throw new Error(`Could not open ${url} after ${Math.round(APPSMITH_READY_TIMEOUT_MS / 1000)}s. Last error: ${lastError}`);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

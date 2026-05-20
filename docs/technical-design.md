@@ -41,7 +41,7 @@ deploy/appsmith
 **Setup check**
 
 - Reads `APPSMITH_BASE_URL`.
-- Performs a simple reachability check.
+- Waits for the local Appsmith HTTP target to become ready.
 - Writes a small evidence record.
 
 **Signup admin**

@@ -46,7 +46,7 @@ npm run appsmith:up
 npm run appsmith:setup-check
 ```
 
-Appsmith can take a minute or two on first boot. If `setup-check` fails immediately after `appsmith:up`, wait and run it again.
+Appsmith can take a minute or two on first boot. `setup-check` waits for the local HTTP target to become ready before returning.
 
 Then choose one auth path.
 
