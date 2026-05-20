@@ -54,6 +54,30 @@ npm run appsmith:start
 
 Expected result: the command ends with `Auth URL: http://localhost:8080/applications`.
 
+## Run The Appsmith Demo
+
+This is the easiest command to watch before looking through the smaller scripts:
+
+```bash
+npm run demo:appsmith
+```
+
+It opens Appsmith in a headed Playwright browser, creates or reuses a local app named `Access Review Demo`, drags a Text, Table, Input, and Button widget onto the canvas, deploys the app, opens the deployed URL, and writes evidence under `evidence/scenarios/<run-id>/`.
+
+The demo pauses briefly at the main screens so it is easy to follow without dragging on. The default pause is 3 seconds, with shorter 1-second pauses before the first drag and before exit. For a faster check:
+
+```bash
+DEMO_PAUSE_MS=0 npm run demo:appsmith
+```
+
+If you want it fully headless for CI-style validation:
+
+```bash
+DEMO_PAUSE_MS=0 SCENARIO_HEADLESS=true npm run demo:appsmith
+```
+
+Normal Chrome and Playwright do not share auth. If Chrome shows the Appsmith login page, that does not mean Playwright auth is broken; the demo uses `playwright/.auth/appsmith-admin.json`.
+
 Manual auth commands are still available when you want to run the steps separately.
 
 For a brand-new Appsmith volume:
@@ -122,9 +146,10 @@ SCENARIO_HEADLESS=true npm run scenario:locator-resilience
 SCENARIO_HEADLESS=true npm run scenario:evidence
 SCENARIO_HEADLESS=true npm run scenario:network-observation
 SCENARIO_HEADLESS=true npm run scenario:selector-repair
+npm run demo:appsmith
 ```
 
-They cover auth-state reuse, applications-page handling, demo app creation, locator fallback, trace/evidence capture, network observation, and selector repair.
+They cover auth-state reuse, applications-page handling, demo app creation, locator fallback, trace/evidence capture, network observation, selector repair, and a guided Appsmith editor/deploy walkthrough.
 
 ## Notion Workflow Recorder
 
