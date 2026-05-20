@@ -1,0 +1,12 @@
+name: appsmith-access-agent
+
+services:
+  appsmith:
+    image: index.docker.io/appsmith/appsmith-ce:latest
+    container_name: appsmith-access-agent
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./stacks:/appsmith-stacks
+    restart: unless-stopped

@@ -1,0 +1,45 @@
+{
+  "name": "appsmith-access-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "appsmith:up": "docker compose -f deploy/appsmith/docker-compose.yml up -d",
+    "appsmith:setup-check": "tsx packages/cli/src/index.ts appsmith setup-check",
+    "appsmith:signup-admin": "tsx packages/cli/src/index.ts appsmith signup-admin",
+    "appsmith:login": "tsx packages/cli/src/index.ts appsmith login",
+    "appsmith:auth-check": "tsx packages/cli/src/index.ts appsmith auth-check",
+    "appsmith:sync-users": "tsx packages/cli/src/index.ts appsmith sync-users",
+    "appsmith:invite": "tsx packages/cli/src/index.ts appsmith invite",
+    "appsmith:deprovision": "tsx packages/cli/src/index.ts appsmith deprovision",
+    "appsmith:api-replay-sync": "tsx packages/cli/src/index.ts appsmith api-replay-sync",
+    "appsmith:broken-selector-demo": "tsx packages/cli/src/index.ts appsmith broken-selector-demo",
+    "practice:01": "tsx scripts/practice/01-auth-check.ts",
+    "practice:02": "tsx scripts/practice/02-empty-applications.ts",
+    "practice:03": "tsx scripts/practice/03-create-practice-app.ts",
+    "practice:04": "tsx scripts/practice/04-locator-resilience.ts",
+    "practice:05": "tsx scripts/practice/05-traces-and-evidence.ts",
+    "practice:06": "tsx scripts/practice/06-network-observation.ts",
+    "practice:07": "tsx scripts/practice/07-selector-repair-openai.ts",
+    "test": "vitest run",
+    "test:fixtures": "playwright test",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "commander": "^14.0.3",
+    "dotenv": "^17.4.2",
+    "openai": "^6.38.0",
+    "playwright": "^1.60.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^25.9.0",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.6"
+  }
+}
