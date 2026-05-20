@@ -35,6 +35,8 @@ OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5-mini
 ```
 
+Do not skip the `.env` step. `signup-admin`, `login`, and write/sync commands require `APPSMITH_ADMIN_EMAIL` and `APPSMITH_ADMIN_PASSWORD`.
+
 Start Appsmith:
 
 ```bash
@@ -58,6 +60,8 @@ npm run appsmith:auth-check
 ```
 
 Expected result: `auth-check` ends on `/applications`, not `/user/login`.
+
+`auth-check` verifies an existing Playwright auth state. On a fresh clone it should fail until `signup-admin` or `login` has created `playwright/.auth/appsmith-admin.json`.
 
 ## Operational Commands
 

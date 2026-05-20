@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import type { Page } from "playwright";
@@ -165,10 +166,19 @@ export async function authCheck(config: AppsmithConfig): Promise<{ ok: boolean; 
     action: "setup_check",
     input: { baseUrl: config.baseUrl, storageStatePath: config.storageStatePath }
   });
+
+  if (!existsSync(config.storageStatePath)) {
+    const result = { ok: false, reason: "missing_storage_state", storageStatePath: config.storageStatePath };
+    await writer.writeJson("auth-check.json", result);
+    throw new Error(
+      `No Playwright auth state found at ${config.storageStatePath}. Set APPSMITH_ADMIN_EMAIL and APPSMITH_ADMIN_PASSWORD in .env, then run npm run appsmith:signup-admin for a fresh local Appsmith instance or npm run appsmith:login for an existing admin.`
+    );
+  }
+
   const session = await createBrowserSession({ headless: config.headless, storageStatePath: config.storageStatePath });
 
   try {
-    await session.page.goto(config.baseUrl, { waitUntil: "domcontentloaded" });
+    await session.page.goto(joinUrl(config.baseUrl, "/applications"), { waitUntil: "domcontentloaded" });
     await session.page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
     await session.page.screenshot({ path: writer.screenshotPath("auth-check") });
     await assertAuthenticated(session.page);
@@ -519,9 +529,14 @@ async function isAuthenticated(page: Page): Promise<boolean> {
   const url = page.url();
   const bodyText = await page.locator("body").innerText({ timeout: 5_000 }).catch(() => "");
   return (
-    !/\/user\/(login|signup|forgotPassword)|\/setup\//i.test(url) &&
+    isAuthenticatedAppsmithUrl(url) &&
     !/sign in to your account|create your account|let's setup your account first/i.test(bodyText)
   );
+}
+
+export function isAuthenticatedAppsmithUrl(url: string): boolean {
+  const pathname = new URL(url).pathname;
+  return pathname === "/applications" || pathname.startsWith("/app/") || pathname.startsWith("/settings/");
 }
 
 function escapeRegExp(value: string): string {
