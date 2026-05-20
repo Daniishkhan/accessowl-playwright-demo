@@ -64,7 +64,7 @@ npm run demo:appsmith
 
 It opens Appsmith in a headed Playwright browser, creates or reuses a local app named `Access Review Demo`, drags a Text, Table, Input, and Button widget onto the canvas, deploys the app, opens the deployed URL, and writes evidence under `evidence/scenarios/<run-id>/`.
 
-The demo pauses for 10 seconds at the main screens so it is easy to follow. For a faster check:
+The demo pauses briefly at the main screens so it is easy to follow without dragging on. The default pause is 3 seconds, with shorter 1-second pauses before the first drag and before exit. For a faster check:
 
 ```bash
 DEMO_PAUSE_MS=0 npm run demo:appsmith

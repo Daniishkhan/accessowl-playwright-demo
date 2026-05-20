@@ -15,8 +15,8 @@ describe("scenario runtime config", () => {
     expect(scenarioHeadless({ HEADLESS: "false" })).toBe(false);
   });
 
-  it("defaults the guided demo pause to ten seconds", () => {
-    expect(demoPauseMs({})).toBe(10_000);
+  it("defaults the guided demo pause to three seconds", () => {
+    expect(demoPauseMs({})).toBe(3_000);
   });
 
   it("allows a fast zero-pause demo run", () => {

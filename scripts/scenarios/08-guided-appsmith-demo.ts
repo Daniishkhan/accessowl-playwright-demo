@@ -61,7 +61,7 @@ try {
   await session.page.waitForLoadState("networkidle").catch(() => undefined);
   await waitForWidgetPalette();
   await screenshot(session.page, run, "01-empty-editor.png");
-  await pauseForDemo("Empty Appsmith editor is ready", pauseMs);
+  await pauseForDemo("Empty Appsmith editor is ready", quickPauseMs());
 
   console.log("Step 3/6: drag real Appsmith widgets onto the canvas.");
   await dragWidget(".t--widget-card-draggable-textwidget", { x: 500, y: 180 });
@@ -86,7 +86,7 @@ try {
 
   console.log("Step 5/6: deploy the Appsmith app from the UI.");
   await session.page.getByRole("button", { name: /deploy/i }).click();
-  await session.page.waitForTimeout(8_000);
+  await session.page.waitForTimeout(3_000);
   await screenshot(session.page, run, "04-after-deploy.png");
   await pauseForDemo("Deploy action completed", pauseMs);
 
@@ -100,7 +100,7 @@ try {
   const networkPath = path.join(run.dir, "network-observed.redacted.json");
   await writeJson(networkPath, observed);
   await writeJson(path.join(run.dir, "dummy-access-rows.json"), DEMO_ROWS);
-  await pauseForDemo("Deployed app is open", pauseMs);
+  await pauseForDemo("Deployed app is open", quickPauseMs());
 
   console.log("");
   console.log("Guided Appsmith demo complete.");
@@ -139,6 +139,10 @@ function shouldRunGuidedDemoHeadless(): boolean {
   return false;
 }
 
+function quickPauseMs(): number {
+  return Math.min(pauseMs, 1_000);
+}
+
 async function waitForWidgetPalette(): Promise<void> {
   await session.page.getByText(/drag & drop ui elements/i).waitFor({ timeout: 20_000 });
 }
@@ -163,7 +167,7 @@ async function dragWidget(selector: string, target: { x: number; y: number }): P
   await session.page.mouse.move(305, target.y, { steps: 8 });
   await session.page.mouse.move(target.x, target.y, { steps: 20 });
   await session.page.mouse.up();
-  await session.page.waitForTimeout(4_000);
+  await session.page.waitForTimeout(2_500);
 }
 
 async function loadPageLayout(app: AppsmithApplication): Promise<PageLayout> {

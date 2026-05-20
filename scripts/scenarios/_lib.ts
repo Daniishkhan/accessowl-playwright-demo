@@ -53,7 +53,7 @@ export function scenarioHeadless(env: NodeJS.ProcessEnv = process.env): boolean 
 
 export function demoPauseMs(env: NodeJS.ProcessEnv = process.env): number {
   const raw = env.DEMO_PAUSE_MS;
-  if (raw === undefined || raw.trim() === "") return 10_000;
+  if (raw === undefined || raw.trim() === "") return 3_000;
 
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 0) {

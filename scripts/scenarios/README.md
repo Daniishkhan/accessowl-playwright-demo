@@ -17,7 +17,7 @@ SCENARIO_HEADLESS=true npm run scenario:network-observation
 npm run demo:appsmith
 ```
 
-`demo:appsmith` is the one to watch live. It opens a headed browser by default, resets the local `Access Review Demo` app, drags a few widgets onto the Appsmith canvas, deploys the app, and opens the deployed URL. It pauses for 10 seconds at the main screens so the browser does not flash by.
+`demo:appsmith` is the one to watch live. It opens a headed browser by default, resets the local `Access Review Demo` app, drags a few widgets onto the Appsmith canvas, deploys the app, and opens the deployed URL. It pauses for 3 seconds at the main screens, with shorter pauses before the first drag and before exit.
 
 Useful demo controls:
 
