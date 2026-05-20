@@ -4,18 +4,31 @@ const recordingOutput = document.querySelector("#recording-output");
 const startButton = document.querySelector("#start-button");
 const stopButton = document.querySelector("#stop-button");
 const clearButton = document.querySelector("#clear-button");
+const copyButton = document.querySelector("#copy-button");
+const downloadButton = document.querySelector("#download-button");
 const targetTabId = Number(new URL(window.location.href).searchParams.get("tabId")) || undefined;
+let lastRecordingText = "";
 
 document.addEventListener("DOMContentLoaded", refreshStatus);
-startButton.addEventListener("click", () => sendRecorderCommand("ACCESSOWL_RECORDER_START"));
-clearButton.addEventListener("click", () => sendRecorderCommand("ACCESSOWL_RECORDER_CLEAR"));
+startButton.addEventListener("click", async () => {
+  clearExport();
+  await sendRecorderCommand("ACCESSOWL_RECORDER_START");
+});
+clearButton.addEventListener("click", async () => {
+  clearExport();
+  await sendRecorderCommand("ACCESSOWL_RECORDER_CLEAR");
+});
 stopButton.addEventListener("click", async () => {
   const response = await sendRecorderCommand("ACCESSOWL_RECORDER_STOP", false);
   if (response?.ok && response.recording) {
-    recordingOutput.textContent = JSON.stringify(response.recording, null, 2);
+    lastRecordingText = JSON.stringify(response.recording, null, 2);
+    recordingOutput.textContent = lastRecordingText;
+    setExportActionsEnabled(true);
     setStatus(`Exported ${response.recording.eventCount} recorded event(s).`);
   }
 });
+copyButton.addEventListener("click", copyRecording);
+downloadButton.addEventListener("click", downloadRecording);
 
 async function refreshStatus() {
   const response = await sendRecorderCommand("ACCESSOWL_RECORDER_STATUS", false);
@@ -45,4 +58,39 @@ function updateStatus(response) {
 
 function setStatus(message) {
   status.textContent = message;
+}
+
+async function copyRecording() {
+  if (!lastRecordingText) return;
+
+  try {
+    await navigator.clipboard.writeText(lastRecordingText);
+    setStatus("Copied recording JSON to clipboard.");
+  } catch {
+    setStatus("Could not copy JSON. Select the output and copy it manually.");
+  }
+}
+
+function downloadRecording() {
+  if (!lastRecordingText) return;
+
+  const blob = new Blob([`${lastRecordingText}\n`], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `notion-workflow-recording-${new Date().toISOString().replace(/[:.]/g, "")}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  setStatus("Downloaded recording JSON.");
+}
+
+function clearExport() {
+  lastRecordingText = "";
+  recordingOutput.textContent = "";
+  setExportActionsEnabled(false);
+}
+
+function setExportActionsEnabled(enabled) {
+  copyButton.disabled = !enabled;
+  downloadButton.disabled = !enabled;
 }

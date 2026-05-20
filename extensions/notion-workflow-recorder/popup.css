@@ -57,6 +57,10 @@ h1 {
   gap: 8px;
 }
 
+.secondary-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
 button {
   min-height: 38px;
   border: 1px solid #12614f;
@@ -67,7 +71,7 @@ button {
   cursor: pointer;
 }
 
-button:first-child {
+#start-button {
   color: #ffffff;
   background: #12614f;
 }

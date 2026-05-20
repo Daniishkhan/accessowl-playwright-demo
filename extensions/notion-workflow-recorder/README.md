@@ -35,6 +35,7 @@ Use a Notion workspace you own and dummy data only:
 8. Click through a small admin workflow.
 9. Stop before sending a real invite unless it is a safe test address.
 10. Export the recording from the popup.
+11. Use `Copy JSON` or `Download JSON` to save the output outside the repo.
 
 ## Manual Loading
 
@@ -45,4 +46,4 @@ Use a Notion workspace you own and dummy data only:
 5. Open a supported page.
 6. Use the popup to start and stop recording.
 
-Do not commit real Notion screenshots, auth state, or exported recordings.
+The extension cannot write directly to `evidence/runs/`; Chrome extensions do not have repo filesystem access. Do not commit real Notion screenshots, auth state, or exported recordings.

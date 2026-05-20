@@ -146,9 +146,9 @@ Manual smoke path:
 3. Start the recorder from the extension popup.
 4. Click through a simple admin workflow, such as inviting a test member.
 5. Stop before sending a real invite unless the address is safe.
-6. Export the recording from the popup and inspect the redacted events.
+6. Export the recording from the popup, then copy or download the JSON.
 
-Do not commit real Notion screenshots, auth state, or exported recordings.
+The extension cannot write into `evidence/runs/` because browser extensions do not have direct access to the repo filesystem. Use the popup output, `Copy JSON`, or `Download JSON` for manual smoke evidence. Do not commit real Notion screenshots, auth state, or exported recordings.
 
 ## Evidence
 
