@@ -42,9 +42,9 @@ export async function createBrowserSession(options: BrowserSessionOptions = {}):
       try {
         if (tracePath) {
           await mkdir(path.dirname(tracePath), { recursive: true });
-          await context.tracing.stop({ path: tracePath });
+          await stopTracing(context, tracePath);
         } else {
-          await context.tracing.stop();
+          await stopTracing(context);
         }
       } finally {
         await context.close().catch(() => undefined);
@@ -52,6 +52,18 @@ export async function createBrowserSession(options: BrowserSessionOptions = {}):
       }
     }
   };
+}
+
+async function stopTracing(context: BrowserContext, tracePath?: string): Promise<void> {
+  try {
+    if (tracePath) {
+      await context.tracing.stop({ path: tracePath });
+    } else {
+      await context.tracing.stop();
+    }
+  } catch {
+    console.warn("Warning: Playwright trace could not be saved; continuing without trace.zip.");
+  }
 }
 
 export async function saveStorageState(context: BrowserContext, storageStatePath: string): Promise<void> {

@@ -65,6 +65,7 @@ export async function login(config: AppsmithConfig): Promise<{ storageStatePath:
   try {
     await session.page.goto(joinUrl(config.baseUrl, "/user/login"), { waitUntil: "domcontentloaded" });
     await session.page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+    await waitForLoginPageOrKnownState(session.page);
     await session.page.screenshot({ path: writer.screenshotPath("01-login-page") });
     if (await isAuthenticated(session.page)) {
       await session.page.screenshot({ path: writer.screenshotPath("02-authenticated") });
@@ -85,6 +86,7 @@ export async function login(config: AppsmithConfig): Promise<{ storageStatePath:
       );
       return { storageStatePath: config.storageStatePath, evidenceDir: writer.bundle.rootDir };
     }
+    await assertLoginFormAvailable(session.page);
     await fillFirstAvailable(session.page, [
       () => session.page.getByLabel(/email/i),
       () => session.page.getByPlaceholder(/email/i),
@@ -134,9 +136,13 @@ export async function signupAdmin(config: AppsmithConfig): Promise<{ storageStat
   try {
     await session.page.goto(joinUrl(config.baseUrl, "/user/signup"), { waitUntil: "domcontentloaded" });
     await session.page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+    await waitForSignupPageOrKnownState(session.page);
     await session.page.screenshot({ path: writer.screenshotPath("01-signup-page") });
+    await assertNoExistingAccountSignupError(session.page);
+    await assertSignupFormAvailable(session.page);
     await completeFirstAdminSignup(session.page, config);
     await session.page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => undefined);
+    await assertNoExistingAccountSignupError(session.page);
     await assertAuthenticated(session.page);
     await session.page.screenshot({ path: writer.screenshotPath("02-authenticated") });
     await saveStorageState(session.context, config.storageStatePath);
@@ -391,7 +397,7 @@ async function clickByRoleNames(page: Page, names: string[]): Promise<void> {
   for (const name of names) {
     const button = page.getByRole("button", { name: new RegExp(name, "i") }).first();
     if ((await button.count()) > 0) {
-      await button.click();
+      await button.click({ noWaitAfter: true });
       return;
     }
   }
@@ -470,6 +476,83 @@ async function completeFirstAdminSignup(page: Page, config: AppsmithConfig): Pro
   await advanceOptionalOnboarding(page);
 }
 
+async function waitForLoginPageOrKnownState(page: Page): Promise<void> {
+  await page
+    .waitForFunction(
+      () => {
+        const bodyText = document.body?.innerText ?? "";
+        const pathname = window.location.pathname;
+        const hasLoginInput = Boolean(document.querySelector("input[type='email'], input[type='password']"));
+
+        return (
+          hasLoginInput ||
+          pathname === "/applications" ||
+          pathname.startsWith("/app/") ||
+          pathname.startsWith("/settings/") ||
+          pathname.startsWith("/setup/") ||
+          /sign in to your account|create your account|almost there/i.test(bodyText)
+        );
+      },
+      undefined,
+      { timeout: 10_000 }
+    )
+    .catch(() => undefined);
+}
+
+async function waitForSignupPageOrKnownState(page: Page): Promise<void> {
+  await page
+    .waitForFunction(
+      () => {
+        const bodyText = document.body?.innerText ?? "";
+        const pathname = window.location.pathname;
+        const hasSignupInput = Boolean(
+          document.querySelector(
+            "input[type='email'], input[type='password'], input[placeholder*='John'], input[placeholder*='reach' i]"
+          )
+        );
+
+        return (
+          hasSignupInput ||
+          pathname === "/applications" ||
+          pathname.startsWith("/app/") ||
+          pathname.startsWith("/settings/") ||
+          /already\s+(an?\s+)?account\s+registered|please\s+sign\s+in\s+instead|create your account|almost there/i.test(
+            bodyText
+          ) ||
+          window.location.search.includes("error=")
+        );
+      },
+      undefined,
+      { timeout: 10_000 }
+    )
+    .catch(() => undefined);
+}
+
+async function assertSignupFormAvailable(page: Page): Promise<void> {
+  const hasInput = (await page.locator("input[type='email'], input[type='password']").count()) > 0;
+  if (hasInput || (await isAuthenticated(page))) return;
+
+  throw new Error(
+    "Appsmith signup is not available on this instance. If an admin account already exists, run npm run appsmith:login instead of npm run appsmith:signup-admin."
+  );
+}
+
+async function assertLoginFormAvailable(page: Page): Promise<void> {
+  const hasInput = (await page.locator("input[type='email'], input[type='password']").count()) > 0;
+  if (hasInput || (await isAuthenticated(page))) return;
+
+  const url = page.url();
+  if (/\/setup\//i.test(url)) {
+    throw new Error(
+      "Appsmith onboarding is not complete on this instance. For a fresh local volume, run npm run appsmith:signup-admin first."
+    );
+  }
+
+  throw new Error(
+    "Appsmith login did not render a login form. Check that Appsmith has finished booting, then run npm run appsmith:login again."
+  );
+}
+
 async function advanceOptionalOnboarding(page: Page): Promise<void> {
   for (let step = 0; step < 4; step += 1) {
     if (await isAuthenticated(page)) return;
@@ -520,6 +603,13 @@ async function assertAuthenticated(page: Page): Promise<void> {
   if (await isAuthenticated(page)) return;
 
   const url = page.url();
+  const bodyText = await page.locator("body").innerText({ timeout: 5_000 }).catch(() => "");
+  if (isExistingAppsmithAccountSignupError(url, bodyText)) {
+    throw new Error(
+      "An Appsmith admin account already exists for the configured email. Run npm run appsmith:login instead of npm run appsmith:signup-admin."
+    );
+  }
+
   throw new Error(
     `Appsmith did not authenticate with the configured credentials. Current URL: ${url}. If this is a fresh local instance, run npm run appsmith:signup-admin first.`
   );
@@ -537,6 +627,27 @@ async function isAuthenticated(page: Page): Promise<boolean> {
 export function isAuthenticatedAppsmithUrl(url: string): boolean {
   const pathname = new URL(url).pathname;
   return pathname === "/applications" || pathname.startsWith("/app/") || pathname.startsWith("/settings/");
+}
+
+async function assertNoExistingAccountSignupError(page: Page): Promise<void> {
+  const bodyText = await page.locator("body").innerText({ timeout: 3_000 }).catch(() => "");
+  if (isExistingAppsmithAccountSignupError(page.url(), bodyText)) {
+    throw new Error(
+      "An Appsmith admin account already exists for the configured email. Run npm run appsmith:login instead of npm run appsmith:signup-admin."
+    );
+  }
+}
+
+export function isExistingAppsmithAccountSignupError(url: string, bodyText = ""): boolean {
+  let errorText = "";
+  try {
+    errorText = new URL(url).searchParams.get("error") ?? "";
+  } catch {
+    errorText = "";
+  }
+
+  const text = `${errorText} ${bodyText}`;
+  return /already\s+(an?\s+)?account\s+registered|already\s+registered|please\s+sign\s+in\s+instead/i.test(text);
 }
 
 function escapeRegExp(value: string): string {

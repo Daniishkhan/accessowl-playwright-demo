@@ -70,6 +70,7 @@ Expected first-run failures:
 
 - `APPSMITH_ADMIN_EMAIL and APPSMITH_ADMIN_PASSWORD must be set in .env`: create `.env` from `.env.example` and replace the placeholder password.
 - `No Playwright auth state found at playwright/.auth/appsmith-admin.json`: run `signup-admin` for a new Appsmith volume or `login` for an existing admin.
+- `An Appsmith admin account already exists for the configured email`: this is not a fresh Appsmith volume; run `npm run appsmith:login` instead.
 
 ## Operational Commands
 
