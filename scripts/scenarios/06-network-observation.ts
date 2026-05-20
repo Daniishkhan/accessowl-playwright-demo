@@ -1,17 +1,17 @@
 import path from "node:path";
 import type { Request } from "playwright";
 import {
-  closePracticeSession,
-  createPracticeRun,
+  closeScenarioSession,
+  createScenarioRun,
   goToApplications,
-  launchPracticeSession,
+  launchScenarioSession,
   safeHeaders,
   screenshot,
   writeJson
 } from "./_lib.js";
 
-const run = await createPracticeRun("06-network-observation");
-const session = await launchPracticeSession(run);
+const run = await createScenarioRun("06-network-observation");
+const session = await launchScenarioSession(run);
 const observed: Array<Record<string, unknown>> = [];
 
 session.page.on("requestfinished", async (request: Request) => {
@@ -37,14 +37,14 @@ try {
   console.log(`Observed ${observed.length} relevant request(s).`);
   console.log(`Network summary: ${networkPath}`);
 
-  await closePracticeSession(run, session, {
+  await closeScenarioSession(run, session, {
     result: "success",
     observedRequests: observed.length,
     networkSummary: networkPath,
     screenshot: screenshotPath
   });
 } catch (error) {
-  await closePracticeSession(run, session, {
+  await closeScenarioSession(run, session, {
     result: "failure",
     error: (error as Error).message,
     observedRequests: observed.length,

@@ -19,7 +19,7 @@ Ignored local paths:
 playwright/.auth/
 deploy/appsmith/stacks/
 evidence/runs/
-evidence/practice/
+evidence/scenarios/
 ```
 
 ## Write Controls

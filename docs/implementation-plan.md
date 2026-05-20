@@ -13,7 +13,7 @@ This file summarizes what exists today and what would come next, so a reviewer c
 - Confirmation guard for destructive actions.
 - OpenAI structured-output selector repair with Zod validation.
 - Playwright fixture tests for user extraction and selector recovery.
-- Solved Playwright practice scripts for auth, empty/populated app states, app creation, locator resilience, traces, network observation, and selector repair.
+- Playwright scenario scripts for auth, empty/populated app states, app creation, locator resilience, traces, network observation, and selector repair.
 
 ## Verification
 
@@ -29,8 +29,8 @@ Live local smoke path:
 npm run appsmith:setup-check
 npm run appsmith:login
 npm run appsmith:auth-check
-PRACTICE_HEADLESS=true npm run practice:03
-PRACTICE_HEADLESS=true npm run practice:06
+SCENARIO_HEADLESS=true npm run scenario:ensure-demo-app
+SCENARIO_HEADLESS=true npm run scenario:network-observation
 npm run appsmith:broken-selector-demo
 ```
 

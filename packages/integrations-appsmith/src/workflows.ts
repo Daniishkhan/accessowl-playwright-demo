@@ -63,7 +63,27 @@ export async function login(config: AppsmithConfig): Promise<{ storageStatePath:
 
   try {
     await session.page.goto(joinUrl(config.baseUrl, "/user/login"), { waitUntil: "domcontentloaded" });
+    await session.page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
     await session.page.screenshot({ path: writer.screenshotPath("01-login-page") });
+    if (await isAuthenticated(session.page)) {
+      await session.page.screenshot({ path: writer.screenshotPath("02-authenticated") });
+      await saveStorageState(session.context, config.storageStatePath);
+      await writer.appendLog(`Existing storage state is already authenticated; refreshed ${config.storageStatePath}.`);
+      await writer.writeAuditEvent(
+        AuditEventSchema.parse({
+          runId: writer.bundle.runId,
+          targetApp: "appsmith",
+          action: "login",
+          actor: { type: "service_account", email: config.adminEmail! },
+          input: { baseUrl: config.baseUrl, reusedExistingSession: true },
+          result: "success",
+          artifacts: { screenshots: writer.bundle.screenshots, logs: writer.bundle.logs },
+          startedAt: writer.bundle.createdAt,
+          completedAt: new Date().toISOString()
+        })
+      );
+      return { storageStatePath: config.storageStatePath, evidenceDir: writer.bundle.rootDir };
+    }
     await fillFirstAvailable(session.page, [
       () => session.page.getByLabel(/email/i),
       () => session.page.getByPlaceholder(/email/i),
@@ -112,19 +132,9 @@ export async function signupAdmin(config: AppsmithConfig): Promise<{ storageStat
 
   try {
     await session.page.goto(joinUrl(config.baseUrl, "/user/signup"), { waitUntil: "domcontentloaded" });
+    await session.page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
     await session.page.screenshot({ path: writer.screenshotPath("01-signup-page") });
-    await fillFirstAvailable(session.page, [
-      () => session.page.getByLabel(/email/i),
-      () => session.page.getByPlaceholder(/email/i),
-      () => session.page.getByRole("textbox", { name: /email/i }),
-      () => session.page.locator("input[type='email'], input[name*='email' i]").first()
-    ], config.adminEmail!);
-    await fillFirstAvailable(session.page, [
-      () => session.page.getByLabel(/password/i),
-      () => session.page.getByPlaceholder(/password/i),
-      () => session.page.locator("input[type='password']").first()
-    ], config.adminPassword!);
-    await session.page.getByRole("button", { name: /sign up|create account/i }).click();
+    await completeFirstAdminSignup(session.page, config);
     await session.page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => undefined);
     await assertAuthenticated(session.page);
     await session.page.screenshot({ path: writer.screenshotPath("02-authenticated") });
@@ -383,11 +393,10 @@ async function fillFirstAvailable(page: Page, locators: Array<() => ReturnType<P
 
   for (const makeLocator of locators) {
     try {
-      const locator = makeLocator();
-      if ((await locator.count()) > 0) {
-        await locator.first().fill(value, { timeout: 5_000 });
-        return;
-      }
+      const locator = makeLocator().first();
+      await locator.waitFor({ state: "visible", timeout: 5_000 });
+      await locator.fill(value, { timeout: 5_000 });
+      return;
     } catch (error) {
       lastError = error;
     }
@@ -396,15 +405,127 @@ async function fillFirstAvailable(page: Page, locators: Array<() => ReturnType<P
   throw new Error(`Could not fill login field. Last error: ${(lastError as Error)?.message ?? "none"}`);
 }
 
+async function fillFirstVisibleIfPresent(
+  page: Page,
+  locators: Array<() => ReturnType<Page["locator"]>>,
+  value: string
+): Promise<boolean> {
+  for (const makeLocator of locators) {
+    try {
+      const locator = makeLocator().first();
+      await locator.waitFor({ state: "visible", timeout: 1_000 });
+      await locator.fill(value, { timeout: 5_000 });
+      return true;
+    } catch {
+      // Optional onboarding fields differ across Appsmith versions.
+    }
+  }
+
+  return false;
+}
+
+async function completeFirstAdminSignup(page: Page, config: AppsmithConfig): Promise<void> {
+  await fillFirstVisibleIfPresent(page, [
+    () => page.getByLabel(/first name/i),
+    () => page.getByPlaceholder(/john/i),
+    () => page.locator("input[name*='first' i]").first()
+  ], "Access");
+  await fillFirstVisibleIfPresent(page, [
+    () => page.getByLabel(/last name/i),
+    () => page.getByPlaceholder(/doe/i),
+    () => page.locator("input[name*='last' i]").first()
+  ], "Admin");
+  await fillFirstAvailable(page, [
+    () => page.getByLabel(/^email$/i),
+    () => page.getByPlaceholder(/email|reach/i),
+    () => page.getByRole("textbox", { name: /email/i }),
+    () => page.locator("input[type='email'], input[name*='email' i]").first()
+  ], config.adminEmail!);
+
+  const passwordFields = page.locator("input[type='password']");
+  const passwordCount = await passwordFields.count();
+  if (passwordCount > 0) {
+    for (let index = 0; index < passwordCount; index += 1) {
+      await passwordFields.nth(index).fill(config.adminPassword!, { timeout: 5_000 });
+    }
+  } else {
+    await fillFirstAvailable(page, [
+      () => page.getByLabel(/password/i),
+      () => page.getByPlaceholder(/password|strong/i)
+    ], config.adminPassword!);
+  }
+
+  await clickByRoleNames(page, ["continue", "sign up", "create account"]);
+  await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => undefined);
+  await advanceOptionalOnboarding(page);
+}
+
+async function advanceOptionalOnboarding(page: Page): Promise<void> {
+  for (let step = 0; step < 4; step += 1) {
+    if (await isAuthenticated(page)) return;
+
+    await selectOptionalOnboardingChoices(page);
+    const advanced = await clickFirstOptionalButton(page, ["skip", "continue", "get started", "start building", "finish"]);
+    if (!advanced) return;
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+  }
+}
+
+async function selectOptionalOnboardingChoices(page: Page): Promise<void> {
+  await clickOptionalChoice(page, ["Intermediate", "Advanced", "Novice"]);
+  await clickOptionalChoice(page, ["Work Project", "Personal Project"]);
+}
+
+async function clickOptionalChoice(page: Page, names: string[]): Promise<boolean> {
+  for (const name of names) {
+    const button = buttonByText(page, name).first();
+    if ((await button.count()) > 0 && (await button.isVisible().catch(() => false))) {
+      await button.click({ timeout: 5_000 });
+      await page.waitForTimeout(250);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function clickFirstOptionalButton(page: Page, names: string[]): Promise<boolean> {
+  for (const name of names) {
+    const button = buttonByText(page, name).first();
+    if ((await button.count()) > 0 && (await button.isVisible().catch(() => false))) {
+      await button.click({ timeout: 5_000 });
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function buttonByText(page: Page, name: string) {
+  const exactText = new RegExp(`^\\s*${escapeRegExp(name)}\\s*$`, "i");
+  return page.locator("button").filter({ hasText: exactText });
+}
+
 async function assertAuthenticated(page: Page): Promise<void> {
+  if (await isAuthenticated(page)) return;
+
+  const url = page.url();
+  throw new Error(
+    `Appsmith did not authenticate with the configured credentials. Current URL: ${url}. If this is a fresh local instance, run npm run appsmith:signup-admin first.`
+  );
+}
+
+async function isAuthenticated(page: Page): Promise<boolean> {
   const url = page.url();
   const bodyText = await page.locator("body").innerText({ timeout: 5_000 }).catch(() => "");
+  return (
+    !/\/user\/(login|signup|forgotPassword)|\/setup\//i.test(url) &&
+    !/sign in to your account|create your account|let's setup your account first/i.test(bodyText)
+  );
+}
 
-  if (/\/user\/(login|signup|forgotPassword)/i.test(url) || /sign in to your account|create your account/i.test(bodyText)) {
-    throw new Error(
-      `Appsmith did not authenticate with the configured credentials. Current URL: ${url}. If this is a fresh local instance, run npm run appsmith:signup-admin first.`
-    );
-  }
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function joinUrl(baseUrl: string, pathname: string): string {

@@ -29,8 +29,8 @@ packages/core
   Zod schemas, evidence writer, redaction, browser session factory,
   action-plan validation, OpenAI planner adapter
 
-scripts/practice
-  solved Playwright drills that show the raw browser automation workflow
+scripts/scenarios
+  small Playwright scripts that exercise individual browser automation behaviors
 
 deploy/appsmith
   local owned SaaS target
@@ -48,7 +48,8 @@ deploy/appsmith
 
 - Bootstraps the first local Appsmith account from `.env`.
 - Exists for local development only.
-- Saves `storageState` only after Appsmith leaves login/signup.
+- Handles Appsmith's first-admin onboarding screens.
+- Saves `storageState` only after Appsmith reaches the authenticated application surface.
 
 **Login and auth check**
 
@@ -101,16 +102,16 @@ npm run appsmith:api-replay-sync
 npm run appsmith:broken-selector-demo
 ```
 
-Practice scripts:
+Scenario scripts:
 
 ```bash
-PRACTICE_HEADLESS=true npm run practice:01
-PRACTICE_HEADLESS=true npm run practice:02
-PRACTICE_HEADLESS=true npm run practice:03
-PRACTICE_HEADLESS=true npm run practice:04
-PRACTICE_HEADLESS=true npm run practice:05
-PRACTICE_HEADLESS=true npm run practice:06
-PRACTICE_HEADLESS=true npm run practice:07
+SCENARIO_HEADLESS=true npm run scenario:auth-check
+SCENARIO_HEADLESS=true npm run scenario:applications
+SCENARIO_HEADLESS=true npm run scenario:ensure-demo-app
+SCENARIO_HEADLESS=true npm run scenario:locator-resilience
+SCENARIO_HEADLESS=true npm run scenario:evidence
+SCENARIO_HEADLESS=true npm run scenario:network-observation
+SCENARIO_HEADLESS=true npm run scenario:selector-repair
 ```
 
 Zod-backed types:
@@ -133,7 +134,7 @@ evidence/runs/<run-id>/
   network/
   llm/
 
-evidence/practice/<run-id>/
+evidence/scenarios/<run-id>/
   run.json
   trace.zip
   screenshots/
@@ -145,7 +146,7 @@ Evidence is intentionally ignored by Git.
 ## Edge Cases
 
 - Appsmith CE editions can expose different user/role surfaces.
-- A fresh Appsmith instance may have no apps; practice scripts handle empty and populated states.
+- A fresh Appsmith instance may have no apps; scenario scripts handle empty and populated states.
 - Session expiry redirects to login and should fail clearly.
 - SPA routes may render before network data is complete.
 - Modals and overlays can intercept clicks.

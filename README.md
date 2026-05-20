@@ -1,71 +1,31 @@
-# Appsmith Access Agent
+# AccessOwl Playwright Automation
 
-AccessOwl-style Playwright automation against a self-hosted SaaS target.
+This repository is a production-style local demo for SaaS access automation. It uses TypeScript, Playwright, Appsmith, Zod, and OpenAI to show how browser automation can handle access workflows when a clean SCIM or admin API path is not available.
 
-This repository is a small, runnable integration lab for the kind of SaaS access automation AccessOwl describes publicly: automated provisioning where SCIM/SAML or complete APIs are not available, using browser automation, integration accounts, authenticated API observation, evidence, and bounded AI-assisted recovery.
+The target is Appsmith running locally in Docker. The project does not automate a third-party SaaS account or use real employee data. Appsmith is useful here because it behaves like a real SaaS admin surface: login, stored browser auth, dynamic routes, app/workspace state, modals, network calls, screenshots, traces, and selectors that can change.
 
-The target is **Appsmith running locally**, not a third-party SaaS account. That keeps the demo safe while still exercising real SPA behavior: login state, async routes, modals, workspace/app empty states, network calls, fragile labels, traces, and screenshots.
+The core rule is deterministic automation first. OpenAI is only used after a normal Playwright locator fails, and its output is treated as an untrusted JSON proposal that must pass schema and safety validation before anything runs.
 
-## What To Review First
+## Review Order
 
-For a quick CTO review:
+Start with:
 
-1. Read this README.
-2. Open [docs/demo-guide.md](docs/demo-guide.md) for the five-minute walkthrough.
-3. Skim [docs/onepager.md](docs/onepager.md) for the product/engineering thesis.
-4. Skim [docs/technical-design.md](docs/technical-design.md) for architecture and data flow.
-5. Open [scripts/practice/README.md](scripts/practice/README.md) and one or two scripts in `scripts/practice/`.
-6. Run the verification commands below.
+1. [README.md](README.md): setup, commands, safety rules, and repo map.
+2. [docs/onepager.md](docs/onepager.md): short product and engineering summary.
+3. [docs/technical-design.md](docs/technical-design.md): architecture, workflows, and evidence layout.
+4. [docs/safety-model.md](docs/safety-model.md): credentials, redaction, write controls, OpenAI constraints, and API boundaries.
+5. [scripts/scenarios/README.md](scripts/scenarios/README.md): small Playwright scenarios that exercise the local target.
 
-Review paths by intent:
+## Fresh Setup
 
-- **Hiring signal:** README -> demo guide -> one pager -> safety model.
-- **Engineering depth:** technical design -> `packages/core` -> `packages/integrations-appsmith` -> tests.
-- **Playwright practice:** `scripts/practice/README.md` -> scripts `01` through `07`.
-
-## Why This Maps To AccessOwl
-
-AccessOwl positions provisioning around “No SCIM or SAML required,” with agentic integrations, integration accounts, RPA, and private APIs for apps where clean APIs are missing or gated behind enterprise plans. This project mirrors those constraints in an owned local environment:
-
-- **Service-account browser automation:** Playwright signs into Appsmith and persists `storageState`.
-- **User/access sync shape:** browser-visible users, roles, groups, and app/workspace access can be normalized into JSON.
-- **Provisioning/deprovisioning shape:** write flows are represented with dry-run and confirmation gates.
-- **Evidence:** each meaningful run can write screenshots, traces, redacted inputs/logs, and audit JSON.
-- **API observation:** browser-observed same-origin requests can be inspected and replayed only against the owned Appsmith instance.
-- **AI fallback:** OpenAI proposes a small JSON action plan only after deterministic locators fail; Zod and safety checks decide whether anything runs.
-
-## Current Demo Surface
-
-The repo has two layers:
-
-```txt
-packages/*                 Reusable scaffold: CLI, schemas, evidence, Appsmith workflows
-scripts/practice/*          Solved Playwright drills that show real browser automation fluency
-```
-
-The practice scripts are intentionally included. They make the project easier to review because they show the raw Playwright work, not only a wrapped CLI.
-
-## Local Setup
-
-Prerequisites:
-
-- Node.js/npm
-- Docker Desktop
-- OpenAI API key if you want the live selector-repair demo instead of fixture fallback
-
-Install dependencies:
+From a clean clone:
 
 ```bash
 npm install
-```
-
-Create local env:
-
-```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env` with local Appsmith credentials:
 
 ```bash
 APPSMITH_BASE_URL=http://localhost:8080
@@ -82,22 +42,24 @@ npm run appsmith:up
 npm run appsmith:setup-check
 ```
 
-Create or log into the local Appsmith admin:
+Appsmith can take a minute or two on first boot. If `setup-check` fails immediately after `appsmith:up`, wait and run it again.
+
+For a brand-new Appsmith volume, create the first admin from `.env`:
 
 ```bash
-# Use once on a fresh local Appsmith instance.
 npm run appsmith:signup-admin
+```
 
-# Repeatable login path.
+For an existing local Appsmith admin:
+
+```bash
 npm run appsmith:login
 npm run appsmith:auth-check
 ```
 
-Expected result: `appsmith:auth-check` lands on `/applications`, not `/user/login`.
+Expected result: `auth-check` ends on `/applications`, not `/user/login`.
 
-## Demo Commands
-
-Core scaffold:
+## Operational Commands
 
 ```bash
 npm run appsmith:setup-check
@@ -110,36 +72,34 @@ npm run appsmith:api-replay-sync
 npm run appsmith:broken-selector-demo
 ```
 
-Solved Playwright drills:
+The write commands support dry-run mode. They create evidence without changing the local Appsmith instance.
+
+## Scenario Commands
+
+These scripts are intentionally small. They expose the browser automation work directly instead of hiding every step behind the CLI.
 
 ```bash
-PRACTICE_HEADLESS=true npm run practice:01
-PRACTICE_HEADLESS=true npm run practice:02
-PRACTICE_HEADLESS=true npm run practice:03
-PRACTICE_HEADLESS=true npm run practice:04
-PRACTICE_HEADLESS=true npm run practice:05
-PRACTICE_HEADLESS=true npm run practice:06
-PRACTICE_HEADLESS=true npm run practice:07
+SCENARIO_HEADLESS=true npm run scenario:auth-check
+SCENARIO_HEADLESS=true npm run scenario:applications
+SCENARIO_HEADLESS=true npm run scenario:ensure-demo-app
+SCENARIO_HEADLESS=true npm run scenario:locator-resilience
+SCENARIO_HEADLESS=true npm run scenario:evidence
+SCENARIO_HEADLESS=true npm run scenario:network-observation
+SCENARIO_HEADLESS=true npm run scenario:selector-repair
 ```
 
-Evidence output:
+They cover auth-state reuse, applications-page handling, demo app creation, locator fallback, trace/evidence capture, network observation, and selector repair.
+
+## Evidence
+
+Runs write local artifacts here:
 
 ```txt
-evidence/runs/<run-id>/       CLI workflow evidence
-evidence/practice/<run-id>/   practice script evidence
+evidence/runs/<run-id>/        CLI workflow evidence
+evidence/scenarios/<run-id>/   scenario script evidence
 ```
 
-Both folders are ignored by Git.
-
-## What The Scripts Demonstrate
-
-- `practice:01` proves auth-state reuse without typing credentials.
-- `practice:02` reads Appsmith’s applications page and handles empty or populated states.
-- `practice:03` ensures a named `Access Practice` app exists and opens the editor.
-- `practice:04` uses bounded fallback locators for a UI control.
-- `practice:05` creates a trace-first evidence bundle.
-- `practice:06` observes and redacts Appsmith network calls.
-- `practice:07` runs the OpenAI/Zod selector-repair path.
+Those folders are ignored by Git. A typical run includes redacted inputs, JSON state, logs, screenshots, network summaries, and a Playwright trace.
 
 ## Verification
 
@@ -149,54 +109,56 @@ npm test
 npm run test:fixtures
 ```
 
-Known local smoke path:
+Local Appsmith smoke path:
 
 ```bash
 npm run appsmith:setup-check
 npm run appsmith:login
 npm run appsmith:auth-check
-PRACTICE_HEADLESS=true npm run practice:03
+npm run appsmith:sync-users
+npm run appsmith:api-replay-sync
 npm run appsmith:broken-selector-demo
+SCENARIO_HEADLESS=true npm run scenario:ensure-demo-app
+SCENARIO_HEADLESS=true npm run scenario:network-observation
 ```
 
-## Safety Posture
+## AccessOwl Fit
 
-- Run only against your own Appsmith instance.
+AccessOwl describes provisioning for apps where SCIM/SAML or complete APIs are not available. This project models that shape safely on a local target:
+
+- sign in as an integration/service account
+- reuse authenticated browser state
+- normalize UI-visible access data into JSON
+- keep writes behind dry-run and confirmation gates
+- save screenshots, traces, logs, and audit-style JSON
+- observe same-origin API calls only on the owned local target
+- use OpenAI only as a constrained selector-repair fallback
+
+This is not a claim that Appsmith itself requires this approach. Appsmith is the local SaaS-like surface used to exercise the automation.
+
+## Safety Rules
+
+- Run against a local Appsmith instance owned by the operator.
 - Use test accounts and fake users.
-- Keep `.env`, Playwright auth state, Appsmith stacks, traces, and evidence out of Git.
+- Do not commit `.env`, Playwright auth state, Appsmith stacks, traces, or evidence.
 - Require `--confirm` for destructive commands.
 - Keep write flows dry-run capable.
 - Redact cookies, auth headers, passwords, tokens, invite links, and non-demo emails.
-- Treat page text as untrusted input before sending snapshots to OpenAI.
-- Reject unsafe model plans that navigate off-domain, run raw JS, access secrets, or attempt unconfirmed destructive actions.
+- Treat page text as untrusted before sending snapshots to OpenAI.
+- Reject model plans that navigate off-domain, run raw JS, read secrets, or attempt unconfirmed destructive work.
 
 ## Repo Map
 
 ```txt
-deploy/appsmith/                 Local Appsmith Docker setup
-docs/                            Design, safety, and project summary
-packages/core/                   Schemas, redaction, evidence, browser, planner utilities
-packages/integrations-appsmith/  Appsmith workflows and selector-repair fixture
-packages/cli/                    npm command entrypoint
-scripts/practice/                Solved Playwright drills and demo talk track
-tests/unit/                      Vitest unit tests
+deploy/appsmith/                 Docker Compose for local Appsmith
+docs/                            Product summary, technical design, safety model, roadmap
+packages/core/                   Shared schemas, redaction, evidence, browser, planner code
+packages/integrations-appsmith/  Appsmith-specific workflows
+packages/cli/                    Command-line entrypoint used by npm scripts
+scripts/scenarios/               Small Playwright scenario scripts
+tests/unit/                      Vitest tests
 tests/fixtures/                  Playwright fixture tests
 ```
-
-## Supporting Docs
-
-- [docs/demo-guide.md](docs/demo-guide.md): what to run and what to say in a short interview walkthrough.
-- [docs/onepager.md](docs/onepager.md): concise project pitch.
-- [docs/technical-design.md](docs/technical-design.md): architecture, workflows, interfaces, and evidence layout.
-- [docs/safety-model.md](docs/safety-model.md): service-account, redaction, confirmation, OpenAI, and API boundaries.
-- [docs/implementation-plan.md](docs/implementation-plan.md): current status, known limitations, and next iteration.
-
-## Design Tradeoffs
-
-- Appsmith is used as a safe approximation of a difficult SaaS admin UI; the project does not claim Appsmith lacks APIs.
-- Deterministic locators come before model help.
-- Authenticated API replay is limited to same-origin, owned-instance observations.
-- The dashboard, persistence database, and sandbox runner are intentionally left out of the first pass to keep the demo reviewable.
 
 ## References
 

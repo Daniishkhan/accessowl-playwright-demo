@@ -1,15 +1,15 @@
 import {
-  closePracticeSession,
-  createPracticeRun,
+  closeScenarioSession,
+  createScenarioRun,
   editorUrl,
-  ensurePracticeApp,
+  ensureDemoApp,
   goToApplications,
-  launchPracticeSession,
+  launchScenarioSession,
   screenshot
 } from "./_lib.js";
 
-const run = await createPracticeRun("03-create-practice-app");
-const session = await launchPracticeSession(run);
+const run = await createScenarioRun("03-ensure-demo-app");
+const session = await launchScenarioSession(run);
 
 try {
   await goToApplications(session.page);
@@ -17,16 +17,16 @@ try {
 
   // Appsmith's UI creates an untitled app immediately. For a repeatable demo script,
   // use the authenticated API shape observed from the browser to ensure a named app.
-  const app = await ensurePracticeApp("Access Practice");
+  const app = await ensureDemoApp("Access Automation Demo");
   await session.page.goto(editorUrl(app), { waitUntil: "domcontentloaded" });
   await session.page.waitForLoadState("networkidle").catch(() => undefined);
   await session.page.getByText(/drag & drop ui elements/i).waitFor();
 
   const screenshotPath = await screenshot(session.page, run, "02-editor.png");
-  console.log(`Practice app ready: ${app.name}`);
+  console.log(`Demo app ready: ${app.name}`);
   console.log(`Editor URL: ${session.page.url()}`);
 
-  await closePracticeSession(run, session, {
+  await closeScenarioSession(run, session, {
     result: "success",
     app: { id: app.id, name: app.name, slug: app.slug },
     finalUrl: session.page.url(),
@@ -34,7 +34,7 @@ try {
   });
 } catch (error) {
   await screenshot(session.page, run, "error.png").catch(() => undefined);
-  await closePracticeSession(run, session, {
+  await closeScenarioSession(run, session, {
     result: "failure",
     error: (error as Error).message,
     finalUrl: session.page.url()

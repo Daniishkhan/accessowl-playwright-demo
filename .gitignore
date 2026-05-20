@@ -10,8 +10,7 @@ playwright/screenshots/
 test-results/
 playwright-report/
 
-evidence/runs/
-evidence/practice/
+evidence/
 deploy/appsmith/stacks/
 
 .DS_Store

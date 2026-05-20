@@ -1,14 +1,14 @@
 import {
   clickFirstVisible,
-  closePracticeSession,
-  createPracticeRun,
+  closeScenarioSession,
+  createScenarioRun,
   goToApplications,
-  launchPracticeSession,
+  launchScenarioSession,
   screenshot
 } from "./_lib.js";
 
-const run = await createPracticeRun("04-locator-resilience");
-const session = await launchPracticeSession(run);
+const run = await createScenarioRun("04-locator-resilience");
+const session = await launchScenarioSession(run);
 
 try {
   await goToApplications(session.page);
@@ -23,7 +23,7 @@ try {
   const screenshotPath = await screenshot(session.page, run, "01-create-menu.png");
   console.log(`Clicked Create New via ${clickedWith}`);
 
-  await closePracticeSession(run, session, {
+  await closeScenarioSession(run, session, {
     result: "success",
     clickedWith,
     finalUrl: session.page.url(),
@@ -31,7 +31,7 @@ try {
   });
 } catch (error) {
   await screenshot(session.page, run, "error.png").catch(() => undefined);
-  await closePracticeSession(run, session, {
+  await closeScenarioSession(run, session, {
     result: "failure",
     error: (error as Error).message,
     finalUrl: session.page.url()

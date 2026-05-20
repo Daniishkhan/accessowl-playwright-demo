@@ -1,15 +1,15 @@
 import {
-  closePracticeSession,
-  createPracticeRun,
+  closeScenarioSession,
+  createScenarioRun,
   goToApplications,
-  launchPracticeSession,
+  launchScenarioSession,
   listApplications,
   screenshot,
   visibleButtonNames
 } from "./_lib.js";
 
-const run = await createPracticeRun("02-applications-page");
-const session = await launchPracticeSession(run);
+const run = await createScenarioRun("02-applications-page");
+const session = await launchScenarioSession(run);
 
 try {
   await goToApplications(session.page);
@@ -28,7 +28,7 @@ try {
   console.log(`Applications visible: ${apps.length}`);
   console.log(`Buttons: ${buttons.join(", ")}`);
 
-  await closePracticeSession(run, session, {
+  await closeScenarioSession(run, session, {
     result: "success",
     finalUrl: session.page.url(),
     applications: apps.map((app) => app.name),
@@ -37,7 +37,7 @@ try {
     screenshot: screenshotPath
   });
 } catch (error) {
-  await closePracticeSession(run, session, {
+  await closeScenarioSession(run, session, {
     result: "failure",
     error: (error as Error).message,
     finalUrl: session.page.url()

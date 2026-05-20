@@ -3,7 +3,7 @@ import path from "node:path";
 import { chromium, request, type Browser, type BrowserContext, type Locator, type Page } from "playwright";
 import { redactHeaders } from "../../packages/core/src/index.js";
 
-export type PracticeRun = {
+export type ScenarioRun = {
   id: string;
   name: string;
   dir: string;
@@ -11,7 +11,7 @@ export type PracticeRun = {
   startedAt: string;
 };
 
-export type PracticeSession = {
+export type ScenarioSession = {
   browser: Browser;
   context: BrowserContext;
   page: Page;
@@ -34,12 +34,12 @@ export function storageStatePath(): string {
 }
 
 export function shouldRunHeadless(): boolean {
-  return process.env.PRACTICE_HEADLESS === "true" || process.env.HEADLESS === "true";
+  return process.env.SCENARIO_HEADLESS === "true" || process.env.HEADLESS === "true";
 }
 
-export async function createPracticeRun(name: string): Promise<PracticeRun> {
+export async function createScenarioRun(name: string): Promise<ScenarioRun> {
   const id = `${new Date().toISOString().replace(/[:.]/g, "")}-${name}`;
-  const dir = path.resolve("evidence/practice", id);
+  const dir = path.resolve("evidence/scenarios", id);
   const screenshotsDir = path.join(dir, "screenshots");
   await mkdir(screenshotsDir, { recursive: true });
   return {
@@ -51,7 +51,7 @@ export async function createPracticeRun(name: string): Promise<PracticeRun> {
   };
 }
 
-export async function launchPracticeSession(run: PracticeRun): Promise<PracticeSession> {
+export async function launchScenarioSession(run: ScenarioRun): Promise<ScenarioSession> {
   const browser = await chromium.launch({ headless: shouldRunHeadless() });
   const context = await browser.newContext({
     storageState: storageStatePath(),
@@ -63,9 +63,9 @@ export async function launchPracticeSession(run: PracticeRun): Promise<PracticeS
   return { browser, context, page };
 }
 
-export async function closePracticeSession(
-  run: PracticeRun,
-  session: PracticeSession,
+export async function closeScenarioSession(
+  run: ScenarioRun,
+  session: ScenarioSession,
   result: Record<string, unknown>
 ): Promise<void> {
   const completedAt = new Date().toISOString();
@@ -102,7 +102,7 @@ export async function visibleButtonNames(page: Page): Promise<string[]> {
   return names.map((name) => name.trim()).filter(Boolean);
 }
 
-export async function screenshot(page: Page, run: PracticeRun, name: string): Promise<string> {
+export async function screenshot(page: Page, run: ScenarioRun, name: string): Promise<string> {
   const filePath = path.join(run.screenshotsDir, name.endsWith(".png") ? name : `${name}.png`);
   await page.screenshot({ path: filePath, fullPage: true });
   return filePath;
@@ -140,7 +140,7 @@ export async function listApplications(): Promise<AppsmithApplication[]> {
   }
 }
 
-export async function ensurePracticeApp(name = "Access Practice"): Promise<AppsmithApplication> {
+export async function ensureDemoApp(name = "Access Automation Demo"): Promise<AppsmithApplication> {
   const api = await request.newContext({ baseURL: baseUrl(), storageState: storageStatePath() });
   try {
     const workspaceId = await getDefaultWorkspaceId(api);
@@ -159,7 +159,7 @@ export async function ensurePracticeApp(name = "Access Practice"): Promise<Appsm
       }
     });
     if (!response.ok()) {
-      throw new Error(`Failed to create practice app: ${response.status()} ${response.statusText()}`);
+      throw new Error(`Failed to create demo app: ${response.status()} ${response.statusText()}`);
     }
 
     const json = (await response.json()) as { data: AppsmithApplication };
