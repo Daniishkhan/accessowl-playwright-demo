@@ -26,6 +26,7 @@
     "scenario:evidence": "tsx scripts/scenarios/05-traces-and-evidence.ts",
     "scenario:network-observation": "tsx scripts/scenarios/06-network-observation.ts",
     "scenario:selector-repair": "tsx scripts/scenarios/07-selector-repair-openai.ts",
+    "demo:appsmith": "tsx scripts/scenarios/08-guided-appsmith-demo.ts",
     "test": "vitest run",
     "test:fixtures": "playwright test",
     "typecheck": "tsc -p tsconfig.json --noEmit"

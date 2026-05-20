@@ -18,6 +18,11 @@ export type ScenarioSession = {
   page: Page;
 };
 
+export type LaunchScenarioSessionOptions = {
+  headless?: boolean;
+  slowMo?: number;
+};
+
 export type AppsmithApplication = {
   id: string;
   name: string;
@@ -78,8 +83,14 @@ export async function createScenarioRun(name: string): Promise<ScenarioRun> {
   };
 }
 
-export async function launchScenarioSession(run: ScenarioRun): Promise<ScenarioSession> {
-  const browser = await chromium.launch({ headless: shouldRunHeadless() });
+export async function launchScenarioSession(
+  run: ScenarioRun,
+  options: LaunchScenarioSessionOptions = {}
+): Promise<ScenarioSession> {
+  const browser = await chromium.launch({
+    headless: options.headless ?? shouldRunHeadless(),
+    slowMo: options.slowMo
+  });
   const context = await browser.newContext({
     storageState: storageStatePath(),
     viewport: { width: 1440, height: 900 }
