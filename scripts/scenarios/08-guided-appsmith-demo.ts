@@ -240,24 +240,28 @@ function configureAccessReviewWidgets(dsl: Record<string, any>): Record<string, 
     leftColumn: 1,
     rightColumn: 48,
     topRow: 13,
-    bottomRow: 42
+    bottomRow: 39,
+    tableData: DEMO_ROWS,
+    cachedTableData: DEMO_ROWS,
+    totalRecordsCount: DEMO_ROWS.length,
+    defaultPageSize: 5
   });
 
   Object.assign(input, {
     label: "Reviewer email",
     placeholderText: "reviewer@example.com",
     leftColumn: 1,
-    rightColumn: 24,
-    topRow: 46,
-    bottomRow: 53
+    rightColumn: 28,
+    topRow: 43,
+    bottomRow: 50
   });
 
   Object.assign(button, {
     text: "Review access",
-    leftColumn: 27,
-    rightColumn: 43,
-    topRow: 47,
-    bottomRow: 51
+    leftColumn: 31,
+    rightColumn: 48,
+    topRow: 43,
+    bottomRow: 50
   });
 
   return {
