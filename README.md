@@ -25,6 +25,8 @@ npm install
 cp .env.example .env
 ```
 
+`npm install` is required before any `npm run appsmith:*` command. It installs local script tools such as `tsx`; if you see `sh: tsx: command not found`, run `npm install` in the repo root.
+
 Edit `.env` before running any auth, sync, or write command:
 
 ```bash
