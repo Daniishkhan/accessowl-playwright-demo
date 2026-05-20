@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "appsmith:up": "docker compose -f deploy/appsmith/docker-compose.yml up -d",
+    "appsmith:start": "npm run appsmith:bootstrap",
+    "appsmith:bootstrap": "npm run appsmith:up && tsx packages/cli/src/index.ts appsmith bootstrap",
     "appsmith:setup-check": "tsx packages/cli/src/index.ts appsmith setup-check",
     "appsmith:signup-admin": "tsx packages/cli/src/index.ts appsmith signup-admin",
     "appsmith:login": "tsx packages/cli/src/index.ts appsmith login",

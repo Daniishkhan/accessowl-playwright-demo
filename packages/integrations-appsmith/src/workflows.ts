@@ -52,6 +52,49 @@ export async function setupCheck(config: AppsmithConfig): Promise<{ ok: boolean;
   }
 }
 
+export async function bootstrapLocalAppsmith(
+  config: AppsmithConfig
+): Promise<{ mode: "existing_auth" | "signup" | "login"; authUrl: string; storageStatePath: string; evidenceDir: string }> {
+  requireAppsmithCredentials(config);
+  await setupCheck(config);
+
+  if (existsSync(config.storageStatePath)) {
+    try {
+      const result = await authCheck(config);
+      return {
+        mode: "existing_auth",
+        authUrl: result.url,
+        storageStatePath: config.storageStatePath,
+        evidenceDir: result.evidenceDir
+      };
+    } catch {
+      // Stale auth state is common after resetting the Appsmith volume; fall through and refresh it.
+    }
+  }
+
+  try {
+    const signup = await signupAdmin(config);
+    const auth = await authCheck(config);
+    return {
+      mode: "signup",
+      authUrl: auth.url,
+      storageStatePath: signup.storageStatePath,
+      evidenceDir: auth.evidenceDir
+    };
+  } catch (error) {
+    if (!shouldTryLoginAfterSignupError(error)) throw error;
+  }
+
+  const loginResult = await login(config);
+  const auth = await authCheck(config);
+  return {
+    mode: "login",
+    authUrl: auth.url,
+    storageStatePath: loginResult.storageStatePath,
+    evidenceDir: auth.evidenceDir
+  };
+}
+
 export async function login(config: AppsmithConfig): Promise<{ storageStatePath: string; evidenceDir: string }> {
   requireAppsmithCredentials(config);
   const writer = await EvidenceWriter.create({
@@ -709,6 +752,11 @@ function makeSuccessEvent(
 
 export async function ensureStorageDir(config: AppsmithConfig): Promise<void> {
   await mkdir(path.dirname(config.storageStatePath), { recursive: true });
+}
+
+function shouldTryLoginAfterSignupError(error: unknown): boolean {
+  const message = (error as Error).message;
+  return /admin account already exists|signup is not available|sign in instead|login instead/i.test(message);
 }
 
 async function waitForAppsmithHttp(baseUrl: string, timeoutMs = APPSMITH_READY_TIMEOUT_MS): Promise<Response> {

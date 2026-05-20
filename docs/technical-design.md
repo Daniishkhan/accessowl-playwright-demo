@@ -22,7 +22,7 @@ packages/cli
   command parsing and user-facing scripts
 
 packages/integrations-appsmith
-  setup check, signup, login, auth check, sync, invite, deprovision,
+  bootstrap, setup check, signup, login, auth check, sync, invite, deprovision,
   API observation, broken-selector demo
 
 packages/core
@@ -37,6 +37,15 @@ deploy/appsmith
 ```
 
 ## Core Workflows
+
+**Bootstrap**
+
+- Runs after Docker Compose has started the Appsmith container.
+- Waits for Appsmith readiness.
+- Reuses valid Playwright auth state when present.
+- Creates the first local admin on a fresh volume.
+- Falls back to login when an admin already exists.
+- Verifies the browser lands on `/applications`.
 
 **Setup check**
 
@@ -91,6 +100,8 @@ deploy/appsmith
 Root commands:
 
 ```bash
+npm run appsmith:start
+npm run appsmith:bootstrap
 npm run appsmith:setup-check
 npm run appsmith:signup-admin
 npm run appsmith:login

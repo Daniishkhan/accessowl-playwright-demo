@@ -6,7 +6,7 @@ This file summarizes what exists today and what would come next, so a reviewer c
 
 - Local Appsmith Docker Compose target.
 - npm TypeScript workspace.
-- CLI for setup, signup, login, auth check, sync, invite, deprovision, API observation, and broken-selector demo.
+- CLI for bootstrap, setup, signup, login, auth check, sync, invite, deprovision, API observation, and broken-selector demo.
 - Zod schemas for config, normalized users, audit events, evidence bundles, and action plans.
 - Evidence writer with run IDs, JSON artifacts, logs, screenshots, and trace paths.
 - Secret and email redaction.
@@ -26,8 +26,7 @@ npm run test:fixtures
 Live local smoke path:
 
 ```bash
-npm run appsmith:setup-check
-npm run appsmith:login
+npm run appsmith:start
 npm run appsmith:auth-check
 SCENARIO_HEADLESS=true npm run scenario:ensure-demo-app
 SCENARIO_HEADLESS=true npm run scenario:network-observation

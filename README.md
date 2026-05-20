@@ -18,6 +18,11 @@ Start with:
 
 ## Fresh Setup
 
+Prerequisites:
+
+- Docker Desktop
+- Node.js 20+ and npm
+
 From a clean clone:
 
 ```bash
@@ -27,56 +32,60 @@ cp .env.example .env
 
 `npm install` is required before any `npm run appsmith:*` command. It installs local script tools such as `tsx`; if you see `sh: tsx: command not found`, run `npm install` in the repo root.
 
-Edit `.env` before running any auth, sync, or write command:
+The default `.env.example` credentials are local-only demo credentials for the Appsmith container:
 
 ```bash
 APPSMITH_BASE_URL=http://localhost:8080
 APPSMITH_ADMIN_EMAIL=admin@example.com
-APPSMITH_ADMIN_PASSWORD=use-a-real-local-password
+APPSMITH_ADMIN_PASSWORD=AccessOwlDemo123!
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5-mini
 ```
 
-Do not leave `APPSMITH_ADMIN_PASSWORD=replace_me`. `signup-admin`, `login`, and write/sync commands require `APPSMITH_ADMIN_EMAIL` and `APPSMITH_ADMIN_PASSWORD`.
+Change the Appsmith email/password if you want, but keep both values set. `OPENAI_API_KEY` is optional; selector repair uses a fixture fallback when it is empty.
 
-Start Appsmith:
+Start Appsmith and bootstrap local auth:
+
+```bash
+npm run appsmith:start
+```
+
+`appsmith:start` runs Docker Compose, waits for Appsmith to become ready, creates the first local admin on a fresh volume, falls back to login if the admin already exists, and writes Playwright auth state to `playwright/.auth/appsmith-admin.json`.
+
+Expected result: the command ends with `Auth URL: http://localhost:8080/applications`.
+
+Manual auth commands are still available when you want to run the steps separately.
+
+For a brand-new Appsmith volume:
 
 ```bash
 npm run appsmith:up
 npm run appsmith:setup-check
-```
-
-Appsmith can take a minute or two on first boot. `setup-check` waits for the local HTTP target to become ready before returning.
-
-Then choose one auth path.
-
-For a brand-new Appsmith volume, create the first admin from `.env`:
-
-```bash
 npm run appsmith:signup-admin
 npm run appsmith:auth-check
 ```
 
-For an existing local Appsmith admin, sign in with the credentials from `.env`:
+For an existing local Appsmith admin:
 
 ```bash
+npm run appsmith:up
+npm run appsmith:setup-check
 npm run appsmith:login
 npm run appsmith:auth-check
 ```
-
-Expected result: `auth-check` ends on `/applications`, not `/user/login`.
 
 `auth-check` verifies an existing Playwright auth state. On a fresh clone it should fail until `signup-admin` or `login` has created `playwright/.auth/appsmith-admin.json`.
 
 Expected first-run failures:
 
-- `APPSMITH_ADMIN_EMAIL and APPSMITH_ADMIN_PASSWORD must be set in .env`: create `.env` from `.env.example` and replace the placeholder password.
+- `APPSMITH_ADMIN_EMAIL and APPSMITH_ADMIN_PASSWORD must be set in .env`: create `.env` from `.env.example` and keep both values set.
 - `No Playwright auth state found at playwright/.auth/appsmith-admin.json`: run `signup-admin` for a new Appsmith volume or `login` for an existing admin.
 - `An Appsmith admin account already exists for the configured email`: this is not a fresh Appsmith volume; run `npm run appsmith:login` instead.
 
 ## Operational Commands
 
 ```bash
+npm run appsmith:start
 npm run appsmith:setup-check
 npm run appsmith:login
 npm run appsmith:auth-check
@@ -127,8 +136,7 @@ npm run test:fixtures
 Local Appsmith smoke path:
 
 ```bash
-npm run appsmith:setup-check
-npm run appsmith:login
+npm run appsmith:start
 npm run appsmith:auth-check
 npm run appsmith:sync-users
 npm run appsmith:api-replay-sync

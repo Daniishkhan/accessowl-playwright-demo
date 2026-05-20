@@ -3,6 +3,7 @@ import { Command } from "commander";
 import {
   apiReplaySync,
   authCheck,
+  bootstrapLocalAppsmith,
   brokenSelectorDemo,
   deprovisionUser,
   inviteUser,
@@ -23,6 +24,16 @@ appsmith.command("setup-check").description("Check whether the configured Appsmi
   await run(async () => {
     const result = await setupCheck(loadAppsmithConfig());
     console.log(`Appsmith setup check: ${result.ok ? "ok" : "failed"} (${result.status ?? "no status"})`);
+  });
+});
+
+appsmith.command("bootstrap").description("Start from local Appsmith readiness to saved Playwright auth").action(async () => {
+  await run(async () => {
+    const result = await bootstrapLocalAppsmith(loadAppsmithConfig());
+    console.log(`Bootstrap mode: ${result.mode}`);
+    console.log(`Auth URL: ${result.authUrl}`);
+    console.log(`Storage state: ${result.storageStatePath}`);
+    console.log(`Evidence: ${result.evidenceDir}`);
   });
 });
 
