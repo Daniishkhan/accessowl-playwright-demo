@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium, request, type Browser, type BrowserContext, type Locator, type Page } from "playwright";
@@ -34,7 +35,33 @@ export function storageStatePath(): string {
 }
 
 export function shouldRunHeadless(): boolean {
-  return process.env.SCENARIO_HEADLESS === "true" || process.env.HEADLESS === "true";
+  return scenarioHeadless(process.env);
+}
+
+export function scenarioHeadless(env: NodeJS.ProcessEnv = process.env): boolean {
+  if (env.SCENARIO_HEADLESS !== undefined) {
+    return env.SCENARIO_HEADLESS === "true";
+  }
+
+  return env.HEADLESS === "true";
+}
+
+export function demoPauseMs(env: NodeJS.ProcessEnv = process.env): number {
+  const raw = env.DEMO_PAUSE_MS;
+  if (raw === undefined || raw.trim() === "") return 10_000;
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error("DEMO_PAUSE_MS must be a non-negative number of milliseconds.");
+  }
+
+  return parsed;
+}
+
+export async function pauseForDemo(label: string, ms = demoPauseMs()): Promise<void> {
+  if (ms <= 0) return;
+  console.log(`${label} - pausing ${ms}ms so the browser is easy to follow.`);
+  await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function createScenarioRun(name: string): Promise<ScenarioRun> {
