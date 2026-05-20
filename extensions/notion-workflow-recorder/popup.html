@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AccessOwl Recorder</title>
+    <link rel="stylesheet" href="popup.css">
+    <script src="popup.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Notion workflow</p>
+        <h1>Recorder</h1>
+      </header>
+
+      <section class="panel">
+        <div class="label">Target tab</div>
+        <div id="tab-url" class="value">Finding a supported tab...</div>
+      </section>
+
+      <div class="actions">
+        <button id="start-button" type="button">Start</button>
+        <button id="stop-button" type="button">Stop & export</button>
+        <button id="clear-button" type="button">Clear</button>
+      </div>
+
+      <section class="panel">
+        <div class="label">Status</div>
+        <div id="status" class="value">Ready.</div>
+      </section>
+
+      <pre id="recording-output" aria-label="Workflow recording output"></pre>
+    </main>
+  </body>
+</html>
