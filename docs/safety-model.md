@@ -88,6 +88,19 @@ Page text is treated as untrusted input. If a user name, app title, or page body
 
 Network observation is allowed only on the owned Appsmith instance. The project may record same-origin request shapes for debugging and integration learning, but should not publish live tokens, bypass auth, or replay third-party private APIs.
 
+## Browser Extension Recorder
+
+The Notion workflow recorder is an extension spike for learning and interview discussion. Use it only on a Notion workspace you own, with dummy data, after manual login.
+
+Extension rules:
+
+- Do not read cookies, localStorage, sessionStorage, IndexedDB, hidden inputs, or environment variables.
+- Do not send recorded data to a backend.
+- Record only user-driven DOM events: clicks, input changes, select changes, and form submissions.
+- Store selector hints and visible labels/text only after redaction.
+- Redact non-demo emails, tokens, password-like values, and invite/reset links.
+- Do not commit real Notion screenshots, auth state, or exported recordings.
+
 ## Future Sandbox Direction
 
 A future version could run the browser worker in E2B, Daytona, or another isolated environment. The first version keeps execution local so the core Playwright behavior remains easy to inspect.

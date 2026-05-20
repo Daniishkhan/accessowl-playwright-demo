@@ -126,6 +126,30 @@ SCENARIO_HEADLESS=true npm run scenario:selector-repair
 
 They cover auth-state reuse, applications-page handling, demo app creation, locator fallback, trace/evidence capture, network observation, and selector repair.
 
+## Notion Workflow Recorder
+
+`extensions/notion-workflow-recorder/` is a small browser extension spike for the browser-extension part of the AccessOwl role. It is closer to a real use case than a generic page snapshot: an admin clicks through a SaaS workflow once, and the extension records enough safe context to help build a durable Playwright integration.
+
+The recorder captures:
+
+- click, input, change, and submit events
+- visible target text, labels, roles, and placeholders
+- Playwright-friendly selector candidates
+- redacted field values and URLs
+
+It deliberately does not read cookies, browser storage, hidden secrets, or call any backend.
+
+Manual smoke path:
+
+1. Load `extensions/notion-workflow-recorder/` from `chrome://extensions`.
+2. Open a Notion workspace you own and use dummy data only.
+3. Start the recorder from the extension popup.
+4. Click through a simple admin workflow, such as inviting a test member.
+5. Stop before sending a real invite unless the address is safe.
+6. Export the recording from the popup and inspect the redacted events.
+
+Do not commit real Notion screenshots, auth state, or exported recordings.
+
 ## Evidence
 
 Runs write local artifacts here:
@@ -191,6 +215,7 @@ packages/core/                   Shared schemas, redaction, evidence, browser, p
 packages/integrations-appsmith/  Appsmith-specific workflows
 packages/cli/                    Command-line entrypoint used by npm scripts
 scripts/scenarios/               Small Playwright scenario scripts
+extensions/notion-workflow-recorder/  Manual Notion workflow recorder extension
 tests/unit/                      Vitest tests
 tests/fixtures/                  Playwright fixture tests
 ```
