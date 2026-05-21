@@ -52,18 +52,18 @@ session.page.on("requestfinished", async (request: Request) => {
 });
 
 try {
-  console.log("Step 1/6: prepare the local Appsmith demo app.");
+  console.log("Step 1/5: prepare the local Appsmith demo app.");
   const app = await ensureDemoApp(DEMO_APP_NAME);
   await resetDemoCanvas(app);
 
-  console.log("Step 2/6: open the Appsmith editor with saved Playwright auth.");
+  console.log("Step 2/5: open the Appsmith editor with saved Playwright auth.");
   await session.page.goto(editorUrl(app), { waitUntil: "domcontentloaded" });
   await session.page.waitForLoadState("networkidle").catch(() => undefined);
   await waitForWidgetPalette();
   await screenshot(session.page, run, "01-empty-editor.png");
   await pauseForDemo("Empty Appsmith editor is ready", quickPauseMs());
 
-  console.log("Step 3/6: drag real Appsmith widgets onto the canvas.");
+  console.log("Step 3/5: drag widgets, then apply the access-review layout.");
   await dragWidget(".t--widget-card-draggable-textwidget", { x: 500, y: 180 });
   await openWidgetPalette();
   await dragWidget(".t--widget-card-draggable-tablewidgetv2", { x: 620, y: 340 });
@@ -71,32 +71,28 @@ try {
   await dragWidget(".t--widget-card-draggable-inputwidgetv2", { x: 520, y: 560 });
   await openWidgetPalette();
   await dragWidget(".t--widget-card-draggable-buttonwidget", { x: 760, y: 560 });
-  await screenshot(session.page, run, "02-widgets-dropped.png");
-  await pauseForDemo("Widgets have been dragged onto the canvas", pauseMs);
-
-  console.log("Step 4/6: label and arrange the widgets for an access-review demo.");
   const layout = await loadPageLayout(app);
   const checks = configureAccessReviewWidgets(layout.dsl);
   await savePageLayout(layout);
   await session.page.reload({ waitUntil: "domcontentloaded" });
   await session.page.waitForLoadState("networkidle").catch(() => undefined);
   await session.page.getByText(/access review queue/i).waitFor();
-  await screenshot(session.page, run, "03-configured-editor.png");
-  await pauseForDemo("Configured Appsmith editor is visible", pauseMs);
+  await screenshot(session.page, run, "02-configured-editor.png");
+  await pauseForDemo("Configured access-review editor is visible", pauseMs);
 
-  console.log("Step 5/6: deploy the Appsmith app from the UI.");
+  console.log("Step 4/5: deploy the Appsmith app from the UI.");
   await session.page.getByRole("button", { name: /deploy/i }).click();
   await session.page.waitForTimeout(3_000);
-  await screenshot(session.page, run, "04-after-deploy.png");
+  await screenshot(session.page, run, "03-after-deploy.png");
   await pauseForDemo("Deploy action completed", pauseMs);
 
-  console.log("Step 6/6: open and verify the deployed app.");
+  console.log("Step 5/5: open and verify the deployed app.");
   const deployedUrl = editorUrl(app).replace(/\/edit(?:\?.*)?$/, "");
   await session.page.goto(deployedUrl, { waitUntil: "domcontentloaded" });
   await session.page.waitForLoadState("networkidle").catch(() => undefined);
   await session.page.getByText(/access review queue/i).waitFor();
   await session.page.getByText(/review access/i).waitFor();
-  const deployedScreenshot = await screenshot(session.page, run, "05-deployed-app.png");
+  const deployedScreenshot = await screenshot(session.page, run, "04-deployed-app.png");
   const networkPath = path.join(run.dir, "network-observed.redacted.json");
   await writeJson(networkPath, observed);
   await writeJson(path.join(run.dir, "dummy-access-rows.json"), DEMO_ROWS);
@@ -251,9 +247,9 @@ function configureAccessReviewWidgets(dsl: Record<string, any>): Record<string, 
     label: "Reviewer email",
     placeholderText: "reviewer@example.com",
     leftColumn: 1,
-    rightColumn: 28,
-    topRow: 43,
-    bottomRow: 50
+    rightColumn: 29,
+    topRow: 42,
+    bottomRow: 49
   });
 
   Object.assign(button, {
@@ -261,7 +257,7 @@ function configureAccessReviewWidgets(dsl: Record<string, any>): Record<string, 
     leftColumn: 31,
     rightColumn: 48,
     topRow: 43,
-    bottomRow: 50
+    bottomRow: 48
   });
 
   return {
