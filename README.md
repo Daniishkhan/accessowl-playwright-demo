@@ -52,7 +52,14 @@ npm run appsmith:start
 
 `appsmith:start` runs Docker Compose, waits for Appsmith to become ready, creates the first local admin on a fresh volume, falls back to login if the admin already exists, and writes Playwright auth state to `playwright/.auth/appsmith-admin.json`.
 
-Expected result: the command ends with `Auth URL: http://localhost:8080/applications`.
+This usually takes 1-2 minutes, depending on your machine. When it finishes, you should see output like this:
+
+```text
+Bootstrap mode: signup
+Auth URL: http://localhost:8080/applications
+Storage state: playwright/.auth/appsmith-admin.json
+Evidence: /Users/danish/Desktop/accessowl-playwright-demo/evidence/runs/2026-05-21T001206207Z-pua06y
+```
 
 ## Run The Appsmith Demo
 
@@ -78,27 +85,7 @@ DEMO_PAUSE_MS=0 SCENARIO_HEADLESS=true npm run demo:appsmith
 
 Normal Chrome and Playwright do not share auth. If Chrome shows the Appsmith login page, that does not mean Playwright auth is broken; the demo uses `playwright/.auth/appsmith-admin.json`.
 
-Manual auth commands are still available when you want to run the steps separately.
-
-For a brand-new Appsmith volume:
-
-```bash
-npm run appsmith:up
-npm run appsmith:setup-check
-npm run appsmith:signup-admin
-npm run appsmith:auth-check
-```
-
-For an existing local Appsmith admin:
-
-```bash
-npm run appsmith:up
-npm run appsmith:setup-check
-npm run appsmith:login
-npm run appsmith:auth-check
-```
-
-`auth-check` verifies an existing Playwright auth state. On a fresh clone it should fail until `signup-admin` or `login` has created `playwright/.auth/appsmith-admin.json`.
+Manual auth commands are still available if you want to debug the setup step by step, but they are not needed for the normal demo path. Start with `npm run appsmith:start`, then run `npm run demo:appsmith`.
 
 Expected first-run failures:
 
@@ -106,50 +93,9 @@ Expected first-run failures:
 - `No Playwright auth state found at playwright/.auth/appsmith-admin.json`: run `signup-admin` for a new Appsmith volume or `login` for an existing admin.
 - `An Appsmith admin account already exists for the configured email`: this is not a fresh Appsmith volume; run `npm run appsmith:login` instead.
 
-## Operational Commands
+## Smaller Checks
 
-```bash
-npm run appsmith:start
-npm run appsmith:setup-check
-npm run appsmith:login
-npm run appsmith:auth-check
-npm run appsmith:sync-users
-npm run appsmith:invite -- --email demo-user@example.com --role viewer --dry-run
-npm run appsmith:deprovision -- --email demo-user@example.com --confirm --dry-run
-npm run appsmith:api-replay-sync
-npm run appsmith:broken-selector-demo
-```
-
-The write commands support dry-run mode. They create evidence without changing the local Appsmith instance.
-
-What these commands prove:
-
-| Command | What it does | What to inspect |
-| --- | --- | --- |
-| `appsmith:start` | Starts the local Appsmith container, waits for readiness, creates or logs in as the local admin, and saves Playwright auth state. | `playwright/.auth/appsmith-admin.json` and the latest `evidence/runs/*/` folder |
-| `appsmith:auth-check` | Opens Appsmith with saved browser state and confirms the session lands on `/applications`. | Screenshot, trace, and `auth-check.json` |
-| `appsmith:sync-users` | Reads the visible access surface and normalizes users into JSON. A fresh Appsmith instance can return `0 user(s)`, which is expected before invites or workspace users exist. | `sync-users.json` and the audit event |
-| `appsmith:invite -- --dry-run` | Walks the provisioning path without committing the invite. | Dry-run input, log, screenshot, and audit event |
-| `appsmith:deprovision -- --confirm --dry-run` | Exercises the destructive-command guard and dry-run path. | Confirmation handling and audit event |
-| `appsmith:api-replay-sync` | Observes same-origin Appsmith network traffic after browser auth and records candidate API calls for possible owned-instance replay. | Redacted request summaries |
-| `appsmith:broken-selector-demo` | Breaks a deterministic locator, validates a constrained replacement action plan, and recovers without allowing arbitrary model behavior. | `selector-repair-plan.json`, screenshot, and logs |
-
-## Scenario Commands
-
-These scripts are intentionally small. They expose the browser automation work directly instead of hiding every step behind the CLI.
-
-```bash
-SCENARIO_HEADLESS=true npm run scenario:auth-check
-SCENARIO_HEADLESS=true npm run scenario:applications
-SCENARIO_HEADLESS=true npm run scenario:ensure-demo-app
-SCENARIO_HEADLESS=true npm run scenario:locator-resilience
-SCENARIO_HEADLESS=true npm run scenario:evidence
-SCENARIO_HEADLESS=true npm run scenario:network-observation
-SCENARIO_HEADLESS=true npm run scenario:selector-repair
-npm run demo:appsmith
-```
-
-They cover auth-state reuse, applications-page handling, demo app creation, locator fallback, trace/evidence capture, network observation, selector repair, and a guided Appsmith editor/deploy walkthrough.
+The repo still includes the earlier CLI and scenario scripts for auth reuse, network observation, selector repair, dry-run provisioning, and evidence writing. They are useful for code review, but the main walkthrough is now the Appsmith drag/drop demo above. See [scripts/scenarios/README.md](scripts/scenarios/README.md) or [package.json](package.json) if you want to run those pieces separately.
 
 ## Notion Workflow Recorder
 
@@ -198,13 +144,10 @@ Local Appsmith smoke path:
 
 ```bash
 npm run appsmith:start
-npm run appsmith:auth-check
-npm run appsmith:sync-users
-npm run appsmith:api-replay-sync
-npm run appsmith:broken-selector-demo
-SCENARIO_HEADLESS=true npm run scenario:ensure-demo-app
-SCENARIO_HEADLESS=true npm run scenario:network-observation
+DEMO_PAUSE_MS=0 SCENARIO_HEADLESS=true npm run demo:appsmith
 ```
+
+That path covers the important local flow: auth bootstrap, Appsmith editor automation, real widget drag/drop, deploy, deployed-page verification, and evidence capture. The smaller CLI/scenario scripts are still available for deeper code review.
 
 ## AccessOwl Fit
 
